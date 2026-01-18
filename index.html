@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Datavisualisations - Données Simulées</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Application de Test de Datavisualisations</h1>
+            <p class="subtitle">Comparez différentes représentations graphiques de données numériques simulées</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Panneau de contrôle -->
+            <aside class="control-panel">
+                <h2>Paramètres de génération</h2>
+
+                <div class="control-group">
+                    <label for="sampleSize">Nombre de répondants</label>
+                    <input type="range" id="sampleSize" min="10" max="1000" value="100" step="10">
+                    <span class="value-display" id="sampleSizeValue">100</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="minValue">Valeur minimale</label>
+                    <input type="number" id="minValue" value="0" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="maxValue">Valeur maximale</label>
+                    <input type="number" id="maxValue" value="100" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="distribution">Type de distribution</label>
+                    <select id="distribution">
+                        <option value="normal">Distribution normale</option>
+                        <option value="uniform">Distribution uniforme</option>
+                        <option value="bimodal">Distribution bimodale</option>
+                        <option value="skewed">Distribution asymétrique (droite)</option>
+                        <option value="skewed-left">Distribution asymétrique (gauche)</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="normalParams">
+                    <label for="mean">Moyenne</label>
+                    <input type="number" id="mean" value="50" step="1">
+
+                    <label for="stdDev">Écart-type</label>
+                    <input type="number" id="stdDev" value="15" step="1" min="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="outliers">Ajouter des outliers (%)</label>
+                    <input type="range" id="outliers" min="0" max="20" value="0" step="1">
+                    <span class="value-display" id="outliersValue">0%</span>
+                </div>
+
+                <div class="button-group">
+                    <button id="generateBtn" class="btn btn-primary">Générer les données</button>
+                    <button id="exportBtn" class="btn btn-secondary">Exporter les graphiques</button>
+                </div>
+
+                <!-- Statistiques descriptives -->
+                <div class="stats-panel">
+                    <h3>Statistiques descriptives</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">N :</span>
+                            <span class="stat-value" id="statN">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Moyenne :</span>
+                            <span class="stat-value" id="statMean">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Médiane :</span>
+                            <span class="stat-value" id="statMedian">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Écart-type :</span>
+                            <span class="stat-value" id="statStdDev">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Q1 :</span>
+                            <span class="stat-value" id="statQ1">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Q3 :</span>
+                            <span class="stat-value" id="statQ3">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Min :</span>
+                            <span class="stat-value" id="statMin">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Max :</span>
+                            <span class="stat-value" id="statMax">-</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Zone de visualisations -->
+            <main class="visualization-area">
+                <div class="viz-grid">
+                    <div class="viz-container">
+                        <h3>Histogramme</h3>
+                        <svg id="histogram"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <h3>Box Plot</h3>
+                        <svg id="boxplot"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <h3>Violin Plot</h3>
+                        <svg id="violinplot"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <h3>Dot Plot</h3>
+                        <svg id="dotplot"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <h3>Density Plot</h3>
+                        <svg id="densityplot"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <h3>Bar Chart (avec stats)</h3>
+                        <svg id="barchart"></svg>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/dataGenerator.js"></script>
+    <script src="js/visualizations.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
