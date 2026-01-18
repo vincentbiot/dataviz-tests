@@ -28,9 +28,19 @@ const statElements = {
     max: document.getElementById('statMax')
 };
 
-// Mise à jour des affichages de valeurs
+// Mise à jour des affichages de valeurs avec step dynamique
 sampleSizeInput.addEventListener('input', (e) => {
-    sampleSizeValue.textContent = e.target.value;
+    const value = parseInt(e.target.value);
+    sampleSizeValue.textContent = value.toLocaleString('fr-FR');
+
+    // Ajuster le step dynamiquement pour une meilleure UX sur les grandes plages
+    if (value >= 2000) {
+        sampleSizeInput.step = 100;
+    } else if (value >= 500) {
+        sampleSizeInput.step = 50;
+    } else {
+        sampleSizeInput.step = 10;
+    }
 });
 
 outliersInput.addEventListener('input', (e) => {
