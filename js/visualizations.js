@@ -136,16 +136,22 @@ class Visualizations {
                 .attr('stroke-width', 1);
         });
 
-        // Outliers
-        sorted.forEach(value => {
-            if (value < min || value > max) {
-                g.append('circle')
-                    .attr('cx', center)
-                    .attr('cy', y(value))
-                    .attr('r', 3)
-                    .attr('fill', 'red')
-                    .attr('opacity', 0.5);
-            }
+        // Outliers (avec échantillonnage si trop nombreux)
+        const outliers = sorted.filter(value => value < min || value > max);
+        const MAX_OUTLIERS_DISPLAY = 500;
+        let displayOutliers = outliers;
+        if (outliers.length > MAX_OUTLIERS_DISPLAY) {
+            const indices = d3.shuffle(d3.range(outliers.length)).slice(0, MAX_OUTLIERS_DISPLAY);
+            displayOutliers = indices.map(i => outliers[i]);
+        }
+
+        displayOutliers.forEach(value => {
+            g.append('circle')
+                .attr('cx', center)
+                .attr('cy', y(value))
+                .attr('r', outliers.length > 200 ? 2 : 3)
+                .attr('fill', 'red')
+                .attr('opacity', outliers.length > 200 ? 0.3 : 0.5);
         });
 
         // Axe Y
@@ -217,7 +223,7 @@ class Visualizations {
             .text('Valeur');
     }
 
-    // 4. Dot Plot
+    // 4. Dot Plot (optimisé pour grands échantillons)
     drawDotPlot(data) {
         const svg = d3.select('#dotplot')
             .attr('width', this.width)
@@ -230,18 +236,34 @@ class Visualizations {
             .domain(d3.extent(data))
             .range([this.innerHeight, 0]);
 
-        const jitterWidth = 40;
         const center = this.innerWidth / 2;
+
+        // Optimisation pour les grands échantillons
+        const MAX_VISUAL_POINTS = 2000;
+        let displayData = data;
+        let isSampled = false;
+
+        if (data.length > MAX_VISUAL_POINTS) {
+            // Échantillonnage aléatoire stratifié pour préserver la distribution
+            const indices = d3.shuffle(d3.range(data.length)).slice(0, MAX_VISUAL_POINTS);
+            displayData = indices.map(i => data[i]);
+            isSampled = true;
+        }
+
+        // Ajuster la taille et l'opacité selon le nombre de points
+        const pointRadius = data.length > 5000 ? 1.5 : (data.length > 2000 ? 2 : 3);
+        const pointOpacity = data.length > 5000 ? 0.3 : (data.length > 2000 ? 0.4 : 0.5);
+        const jitterWidth = data.length > 5000 ? 60 : (data.length > 2000 ? 50 : 40);
 
         // Points avec jitter
         g.selectAll('circle')
-            .data(data)
+            .data(displayData)
             .join('circle')
             .attr('cx', () => center + (Math.random() - 0.5) * jitterWidth)
             .attr('cy', d => y(d))
-            .attr('r', 3)
+            .attr('r', pointRadius)
             .attr('fill', '#4682b4')
-            .attr('opacity', 0.5)
+            .attr('opacity', pointOpacity)
             .attr('stroke', 'none');
 
         // Axe Y
@@ -256,6 +278,17 @@ class Visualizations {
             .attr('text-anchor', 'middle')
             .style('font-size', '12px')
             .text('Valeur');
+
+        // Indication si échantillonnage visuel appliqué
+        if (isSampled) {
+            g.append('text')
+                .attr('x', this.innerWidth - 5)
+                .attr('y', 10)
+                .attr('text-anchor', 'end')
+                .style('font-size', '9px')
+                .style('fill', '#666')
+                .text(`(${MAX_VISUAL_POINTS}/${data.length} affichés)`);
+        }
     }
 
     // 5. Density Plot
