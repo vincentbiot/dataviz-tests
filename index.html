@@ -17,47 +17,104 @@
         <div class="main-layout">
             <!-- Panneau de contrôle -->
             <aside class="control-panel">
-                <h2>Paramètres de génération</h2>
+                <!-- Échantillon 1 -->
+                <div class="sample-section" id="sample1Section">
+                    <h2>Échantillon 1</h2>
 
-                <div class="control-group">
-                    <label for="sampleSize">Nombre de répondants</label>
-                    <input type="range" id="sampleSize" min="10" max="10000" value="100" step="10">
-                    <span class="value-display" id="sampleSizeValue">100</span>
+                    <div class="control-group">
+                        <label for="sampleSize1">Nombre de répondants</label>
+                        <input type="range" id="sampleSize1" min="10" max="10000" value="100" step="10">
+                        <span class="value-display" id="sampleSizeValue1">100</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="minValue1">Valeur minimale</label>
+                        <input type="number" id="minValue1" value="0" step="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="maxValue1">Valeur maximale</label>
+                        <input type="number" id="maxValue1" value="100" step="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="distribution1">Type de distribution</label>
+                        <select id="distribution1">
+                            <option value="normal">Distribution normale</option>
+                            <option value="uniform">Distribution uniforme</option>
+                            <option value="bimodal">Distribution bimodale</option>
+                            <option value="skewed">Distribution asymétrique (droite)</option>
+                            <option value="skewed-left">Distribution asymétrique (gauche)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="normalParams1">
+                        <label for="mean1">Moyenne</label>
+                        <input type="number" id="mean1" value="50" step="1">
+
+                        <label for="stdDev1">Écart-type</label>
+                        <input type="number" id="stdDev1" value="15" step="1" min="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="outliers1">Ajouter des outliers (%)</label>
+                        <input type="range" id="outliers1" min="0" max="20" value="0" step="1">
+                        <span class="value-display" id="outliersValue1">0%</span>
+                    </div>
                 </div>
 
-                <div class="control-group">
-                    <label for="minValue">Valeur minimale</label>
-                    <input type="number" id="minValue" value="0" step="1">
+                <!-- Bouton pour ajouter un échantillon -->
+                <div class="add-sample-container" id="addSampleContainer">
+                    <button id="addSampleBtn" class="btn btn-add-sample">+ Ajouter un échantillon</button>
                 </div>
 
-                <div class="control-group">
-                    <label for="maxValue">Valeur maximale</label>
-                    <input type="number" id="maxValue" value="100" step="1">
-                </div>
+                <!-- Échantillon 2 (caché par défaut) -->
+                <div class="sample-section sample-section-2" id="sample2Section" style="display: none;">
+                    <div class="sample-header">
+                        <h2>Échantillon 2</h2>
+                        <button id="removeSampleBtn" class="btn-remove-sample" title="Supprimer l'échantillon 2">×</button>
+                    </div>
 
-                <div class="control-group">
-                    <label for="distribution">Type de distribution</label>
-                    <select id="distribution">
-                        <option value="normal">Distribution normale</option>
-                        <option value="uniform">Distribution uniforme</option>
-                        <option value="bimodal">Distribution bimodale</option>
-                        <option value="skewed">Distribution asymétrique (droite)</option>
-                        <option value="skewed-left">Distribution asymétrique (gauche)</option>
-                    </select>
-                </div>
+                    <div class="control-group">
+                        <label for="sampleSize2">Nombre de répondants</label>
+                        <input type="range" id="sampleSize2" min="10" max="10000" value="100" step="10">
+                        <span class="value-display" id="sampleSizeValue2">100</span>
+                    </div>
 
-                <div class="control-group" id="normalParams">
-                    <label for="mean">Moyenne</label>
-                    <input type="number" id="mean" value="50" step="1">
+                    <div class="control-group">
+                        <label for="minValue2">Valeur minimale</label>
+                        <input type="number" id="minValue2" value="0" step="1">
+                    </div>
 
-                    <label for="stdDev">Écart-type</label>
-                    <input type="number" id="stdDev" value="15" step="1" min="1">
-                </div>
+                    <div class="control-group">
+                        <label for="maxValue2">Valeur maximale</label>
+                        <input type="number" id="maxValue2" value="100" step="1">
+                    </div>
 
-                <div class="control-group">
-                    <label for="outliers">Ajouter des outliers (%)</label>
-                    <input type="range" id="outliers" min="0" max="20" value="0" step="1">
-                    <span class="value-display" id="outliersValue">0%</span>
+                    <div class="control-group">
+                        <label for="distribution2">Type de distribution</label>
+                        <select id="distribution2">
+                            <option value="normal">Distribution normale</option>
+                            <option value="uniform">Distribution uniforme</option>
+                            <option value="bimodal">Distribution bimodale</option>
+                            <option value="skewed">Distribution asymétrique (droite)</option>
+                            <option value="skewed-left">Distribution asymétrique (gauche)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="normalParams2">
+                        <label for="mean2">Moyenne</label>
+                        <input type="number" id="mean2" value="50" step="1">
+
+                        <label for="stdDev2">Écart-type</label>
+                        <input type="number" id="stdDev2" value="15" step="1" min="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="outliers2">Ajouter des outliers (%)</label>
+                        <input type="range" id="outliers2" min="0" max="20" value="0" step="1">
+                        <span class="value-display" id="outliersValue2">0%</span>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -89,38 +146,82 @@
                 <!-- Statistiques descriptives -->
                 <div class="stats-panel">
                     <h3>Statistiques descriptives</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">N :</span>
-                            <span class="stat-value" id="statN">-</span>
+
+                    <!-- Stats Échantillon 1 -->
+                    <div class="stats-sample" id="statsSample1">
+                        <h4 class="stats-sample-title sample-1-color">Échantillon 1</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">N :</span>
+                                <span class="stat-value" id="statN1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Moyenne :</span>
+                                <span class="stat-value" id="statMean1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Médiane :</span>
+                                <span class="stat-value" id="statMedian1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Écart-type :</span>
+                                <span class="stat-value" id="statStdDev1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Q1 :</span>
+                                <span class="stat-value" id="statQ11">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Q3 :</span>
+                                <span class="stat-value" id="statQ31">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Min :</span>
+                                <span class="stat-value" id="statMin1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Max :</span>
+                                <span class="stat-value" id="statMax1">-</span>
+                            </div>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Moyenne :</span>
-                            <span class="stat-value" id="statMean">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Médiane :</span>
-                            <span class="stat-value" id="statMedian">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Écart-type :</span>
-                            <span class="stat-value" id="statStdDev">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Q1 :</span>
-                            <span class="stat-value" id="statQ1">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Q3 :</span>
-                            <span class="stat-value" id="statQ3">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Min :</span>
-                            <span class="stat-value" id="statMin">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Max :</span>
-                            <span class="stat-value" id="statMax">-</span>
+                    </div>
+
+                    <!-- Stats Échantillon 2 (caché par défaut) -->
+                    <div class="stats-sample" id="statsSample2" style="display: none;">
+                        <h4 class="stats-sample-title sample-2-color">Échantillon 2</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">N :</span>
+                                <span class="stat-value" id="statN2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Moyenne :</span>
+                                <span class="stat-value" id="statMean2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Médiane :</span>
+                                <span class="stat-value" id="statMedian2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Écart-type :</span>
+                                <span class="stat-value" id="statStdDev2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Q1 :</span>
+                                <span class="stat-value" id="statQ12">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Q3 :</span>
+                                <span class="stat-value" id="statQ32">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Min :</span>
+                                <span class="stat-value" id="statMin2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Max :</span>
+                                <span class="stat-value" id="statMax2">-</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,9 +229,17 @@
 
             <!-- Zone de visualisation -->
             <main class="visualization-area">
-                <div class="single-viz-container">
-                    <h3 id="chartTitle">Box Plot</h3>
-                    <svg id="mainChart"></svg>
+                <div class="viz-container" id="vizContainer">
+                    <!-- Graphique 1 -->
+                    <div class="single-viz-container" id="chart1Container">
+                        <h3 id="chartTitle1">Box Plot - Échantillon 1</h3>
+                        <svg id="chart1"></svg>
+                    </div>
+                    <!-- Graphique 2 (caché par défaut) -->
+                    <div class="single-viz-container" id="chart2Container" style="display: none;">
+                        <h3 id="chartTitle2">Box Plot - Échantillon 2</h3>
+                        <svg id="chart2"></svg>
+                    </div>
                 </div>
             </main>
         </div>

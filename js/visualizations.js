@@ -7,10 +7,11 @@ class Visualizations {
         this.innerHeight = this.height - this.margin.top - this.margin.bottom;
         this.tooltip = null;
         this.stats = null;
+        this.currentColor = '#4682b4'; // Couleur par défaut (bleu)
     }
 
-    clear() {
-        d3.select('#mainChart').selectAll('*').remove();
+    clear(chartId) {
+        d3.select(`#${chartId}`).selectAll('*').remove();
     }
 
     // Initialiser le tooltip
@@ -100,23 +101,24 @@ class Visualizations {
     }
 
     // Méthode principale pour dessiner le graphique sélectionné
-    draw(data, chartType, showDataPoints, stats) {
-        this.clear();
+    draw(data, chartType, showDataPoints, stats, chartId = 'chart1', color = '#4682b4') {
+        this.clear(chartId);
         this.initTooltip();
         this.stats = stats;
+        this.currentColor = color;
 
         switch (chartType) {
             case 'boxplot':
-                this.drawBoxPlotWithPoints(data, showDataPoints);
+                this.drawBoxPlotWithPoints(data, showDataPoints, chartId);
                 break;
             case 'violinplot':
-                this.drawViolinPlotWithPoints(data, showDataPoints);
+                this.drawViolinPlotWithPoints(data, showDataPoints, chartId);
                 break;
             case 'density':
-                this.drawDensityPlotWithPoints(data, showDataPoints);
+                this.drawDensityPlotWithPoints(data, showDataPoints, chartId);
                 break;
             default:
-                this.drawBoxPlotWithPoints(data, showDataPoints);
+                this.drawBoxPlotWithPoints(data, showDataPoints, chartId);
         }
     }
 
@@ -144,6 +146,7 @@ class Visualizations {
         const center = (leftBoundary + rightBoundary) / 2;
 
         const self = this;
+        const pointColor = this.currentColor;
 
         g.selectAll('circle.datapoint')
             .data(displayData)
@@ -156,7 +159,7 @@ class Visualizations {
             .attr('cx', () => center + (Math.random() - 0.5) * jitterWidth)
             .attr('cy', d => y(d.value))
             .attr('r', pointRadius)
-            .attr('fill', d => outlierIndices.has(d.index) ? '#e74c3c' : '#e67e22')
+            .attr('fill', d => outlierIndices.has(d.index) ? '#e74c3c' : pointColor)
             .attr('opacity', pointOpacity)
             .attr('stroke', 'none')
             .on('mouseenter', function(event, d) {
@@ -215,8 +218,8 @@ class Visualizations {
     }
 
     // Box Plot avec option data points
-    drawBoxPlotWithPoints(data, showDataPoints) {
-        const svg = d3.select('#mainChart')
+    drawBoxPlotWithPoints(data, showDataPoints, chartId) {
+        const svg = d3.select(`#${chartId}`)
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -279,7 +282,7 @@ class Visualizations {
             .attr('y', y(q3))
             .attr('width', boxWidth)
             .attr('height', y(q1) - y(q3))
-            .attr('fill', '#4682b4')
+            .attr('fill', this.currentColor)
             .attr('stroke', 'black')
             .attr('opacity', 0.7);
 
@@ -376,8 +379,8 @@ class Visualizations {
     }
 
     // Violin Plot avec option data points (moitié droite si points activés)
-    drawViolinPlotWithPoints(data, showDataPoints) {
-        const svg = d3.select('#mainChart')
+    drawViolinPlotWithPoints(data, showDataPoints, chartId) {
+        const svg = d3.select(`#${chartId}`)
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -444,7 +447,7 @@ class Visualizations {
             const violinPath = g.append('path')
                 .datum(bins)
                 .attr('d', halfArea)
-                .attr('fill', '#4682b4')
+                .attr('fill', this.currentColor)
                 .attr('opacity', 0.7)
                 .attr('stroke', 'black')
                 .attr('stroke-width', 1);
@@ -470,7 +473,7 @@ class Visualizations {
             const violinPath = g.append('path')
                 .datum(bins)
                 .attr('d', area)
-                .attr('fill', '#4682b4')
+                .attr('fill', this.currentColor)
                 .attr('opacity', 0.7)
                 .attr('stroke', 'black')
                 .attr('stroke-width', 1);
@@ -493,8 +496,8 @@ class Visualizations {
     }
 
     // Density Plot avec option data points
-    drawDensityPlotWithPoints(data, showDataPoints) {
-        const svg = d3.select('#mainChart')
+    drawDensityPlotWithPoints(data, showDataPoints, chartId) {
+        const svg = d3.select(`#${chartId}`)
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -564,7 +567,7 @@ class Visualizations {
         const densityPath = g.append('path')
             .datum(densityData)
             .attr('d', area)
-            .attr('fill', '#4682b4')
+            .attr('fill', this.currentColor)
             .attr('opacity', 0.5);
 
         this.addStatsHoverZone(g, densityPath);
@@ -579,7 +582,7 @@ class Visualizations {
             .datum(densityData)
             .attr('d', line)
             .attr('fill', 'none')
-            .attr('stroke', '#4682b4')
+            .attr('stroke', this.currentColor)
             .attr('stroke-width', 2);
 
         // Ligne de base
