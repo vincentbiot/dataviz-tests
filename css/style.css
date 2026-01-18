@@ -301,40 +301,13 @@ header h1 {
     min-height: 500px;
 }
 
-.viz-container {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.viz-container.comparison-mode {
-    justify-content: space-around;
-}
-
 .single-viz-container {
     background: #f8f9fa;
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-width: 700px;
+    max-width: 800px;
     width: 100%;
-    flex: 1;
-    min-width: 500px;
-}
-
-.viz-container.comparison-mode .single-viz-container {
-    max-width: 600px;
-    min-width: 450px;
-}
-
-#chart1Container {
-    border-top: 4px solid #4682b4;
-}
-
-#chart2Container {
-    border-top: 4px solid #e67e22;
 }
 
 .single-viz-container h3 {
@@ -345,17 +318,37 @@ header h1 {
     font-weight: 600;
 }
 
-#chartTitle1 {
-    color: #4682b4;
-}
-
-#chartTitle2 {
-    color: #e67e22;
-}
-
 .single-viz-container svg {
     display: block;
     margin: 0 auto;
+}
+
+/* Légende du graphique */
+.chart-legend {
+    display: none;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+}
+
+.legend-label {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #495057;
 }
 
 /* Panneau de configuration du graphique */
@@ -417,12 +410,6 @@ header h1 {
 }
 
 /* Responsive */
-@media (max-width: 1400px) {
-    .viz-container.comparison-mode .single-viz-container {
-        min-width: 400px;
-    }
-}
-
 @media (max-width: 1200px) {
     .main-layout {
         grid-template-columns: 1fr;
@@ -437,16 +424,6 @@ header h1 {
     .visualization-area {
         min-height: 450px;
     }
-
-    .viz-container.comparison-mode {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .viz-container.comparison-mode .single-viz-container {
-        max-width: 700px;
-        min-width: 300px;
-    }
 }
 
 @media (max-width: 768px) {
@@ -460,11 +437,16 @@ header h1 {
 
     .single-viz-container {
         padding: 15px;
-        min-width: 300px;
     }
 
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .chart-legend {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
     }
 }
 

@@ -1,17 +1,19 @@
 class Visualizations {
     constructor() {
-        this.width = 600;
+        this.width = 700;
         this.height = 400;
         this.margin = { top: 30, right: 30, bottom: 50, left: 60 };
         this.innerWidth = this.width - this.margin.left - this.margin.right;
         this.innerHeight = this.height - this.margin.top - this.margin.bottom;
         this.tooltip = null;
-        this.stats = null;
-        this.currentColor = '#4682b4'; // Couleur par défaut (bleu)
+        this.colors = {
+            sample1: '#4682b4',
+            sample2: '#e67e22'
+        };
     }
 
-    clear(chartId) {
-        d3.select(`#${chartId}`).selectAll('*').remove();
+    clear() {
+        d3.select('#mainChart').selectAll('*').remove();
     }
 
     // Initialiser le tooltip
@@ -41,12 +43,10 @@ class Visualizations {
         let left = event.clientX + padding;
         let top = event.clientY - tooltipRect.height / 2;
 
-        // Éviter le débordement à droite
         if (left + tooltipRect.width > window.innerWidth - padding) {
             left = event.clientX - tooltipRect.width - padding;
         }
 
-        // Éviter le débordement en haut et en bas
         if (top < padding) {
             top = padding;
         } else if (top + tooltipRect.height > window.innerHeight - padding) {
@@ -65,34 +65,34 @@ class Visualizations {
     }
 
     // Générer le contenu HTML du tooltip pour les stats
-    getStatsTooltipContent() {
-        if (!this.stats) return '';
+    getStatsTooltipContent(stats, sampleName) {
+        if (!stats) return '';
 
         return `
-            <div class="tooltip-title">Statistiques de la distribution</div>
+            <div class="tooltip-title">${sampleName}</div>
             <div class="tooltip-row">
                 <span class="tooltip-label">Moyenne</span>
-                <span class="tooltip-value">${this.stats.mean}</span>
+                <span class="tooltip-value">${stats.mean}</span>
             </div>
             <div class="tooltip-row">
                 <span class="tooltip-label">Médiane</span>
-                <span class="tooltip-value">${this.stats.median}</span>
+                <span class="tooltip-value">${stats.median}</span>
             </div>
             <div class="tooltip-row">
                 <span class="tooltip-label">Q1 (25%)</span>
-                <span class="tooltip-value">${this.stats.q1}</span>
+                <span class="tooltip-value">${stats.q1}</span>
             </div>
             <div class="tooltip-row">
                 <span class="tooltip-label">Q3 (75%)</span>
-                <span class="tooltip-value">${this.stats.q3}</span>
+                <span class="tooltip-value">${stats.q3}</span>
             </div>
         `;
     }
 
     // Générer le contenu HTML du tooltip pour un point de données
-    getPointTooltipContent(index, value) {
+    getPointTooltipContent(index, value, sampleName) {
         return `
-            <div class="tooltip-title">Établissement ${index + 1}</div>
+            <div class="tooltip-title">${sampleName} - Point ${index + 1}</div>
             <div class="tooltip-row">
                 <span class="tooltip-label">Valeur</span>
                 <span class="tooltip-value">${value.toFixed(2)}</span>
@@ -100,35 +100,600 @@ class Visualizations {
         `;
     }
 
-    // Méthode principale pour dessiner le graphique sélectionné
-    draw(data, chartType, showDataPoints, stats, chartId = 'chart1', color = '#4682b4') {
-        this.clear(chartId);
+    // Méthode principale pour dessiner
+    draw(samples, chartType, showDataPoints) {
+        this.clear();
         this.initTooltip();
-        this.stats = stats;
-        this.currentColor = color;
+
+        const isComparison = samples.length === 2;
 
         switch (chartType) {
             case 'boxplot':
-                this.drawBoxPlotWithPoints(data, showDataPoints, chartId);
+                this.drawBoxPlot(samples, showDataPoints, isComparison);
                 break;
             case 'violinplot':
-                this.drawViolinPlotWithPoints(data, showDataPoints, chartId);
+                this.drawViolinPlot(samples, showDataPoints, isComparison);
                 break;
             case 'density':
-                this.drawDensityPlotWithPoints(data, showDataPoints, chartId);
+                this.drawDensityPlot(samples, showDataPoints, isComparison);
                 break;
             default:
-                this.drawBoxPlotWithPoints(data, showDataPoints, chartId);
+                this.drawBoxPlot(samples, showDataPoints, isComparison);
         }
     }
 
-    // Dessiner les data points à gauche avec interactions
-    drawDataPoints(g, data, y, leftBoundary, rightBoundary, outlierIndices = new Set()) {
+    // Calculer l'échelle Y commune pour tous les échantillons
+    getCommonYScale(samples) {
+        let allMin = Infinity;
+        let allMax = -Infinity;
+
+        samples.forEach(sample => {
+            const min = d3.min(sample.data);
+            const max = d3.max(sample.data);
+            if (min < allMin) allMin = min;
+            if (max > allMax) allMax = max;
+        });
+
+        return d3.scaleLinear()
+            .domain([allMin, allMax])
+            .range([this.innerHeight, 0]);
+    }
+
+    // Calculer les statistiques pour les outliers
+    getOutlierBounds(data) {
+        const sorted = data.slice().sort(d3.ascending);
+        const q1 = d3.quantile(sorted, 0.25);
+        const q3 = d3.quantile(sorted, 0.75);
+        const iqr = q3 - q1;
+        return {
+            min: Math.max(d3.min(sorted), q1 - 1.5 * iqr),
+            max: Math.min(d3.max(sorted), q3 + 1.5 * iqr),
+            q1,
+            q3,
+            median: d3.quantile(sorted, 0.5)
+        };
+    }
+
+    // Box Plot
+    drawBoxPlot(samples, showDataPoints, isComparison) {
+        const svg = d3.select('#mainChart')
+            .attr('width', this.width)
+            .attr('height', this.height);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+
+        const y = this.getCommonYScale(samples);
+        const self = this;
+
+        // Définir les positions des box plots
+        const boxWidth = isComparison ? 70 : 80;
+        let positions;
+
+        if (isComparison) {
+            if (showDataPoints) {
+                positions = [this.innerWidth * 0.35, this.innerWidth * 0.75];
+            } else {
+                positions = [this.innerWidth * 0.33, this.innerWidth * 0.67];
+            }
+        } else {
+            positions = [showDataPoints ? this.innerWidth * 0.65 : this.innerWidth / 2];
+        }
+
+        // Zone des data points à gauche (si activée)
+        if (showDataPoints) {
+            const pointsLeftBoundary = 10;
+            const pointsRightBoundary = isComparison ? this.innerWidth * 0.18 : this.innerWidth * 0.35;
+
+            samples.forEach((sample, idx) => {
+                const bounds = this.getOutlierBounds(sample.data);
+                const outlierIndices = new Set();
+                sample.data.forEach((value, index) => {
+                    if (value < bounds.min || value > bounds.max) {
+                        outlierIndices.add(index);
+                    }
+                });
+
+                const leftBound = isComparison ?
+                    (idx === 0 ? pointsLeftBoundary : this.innerWidth * 0.52) :
+                    pointsLeftBoundary;
+                const rightBound = isComparison ?
+                    (idx === 0 ? pointsRightBoundary : this.innerWidth * 0.68) :
+                    pointsRightBoundary;
+
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+            });
+
+            // Ligne de séparation
+            const separatorX = isComparison ? this.innerWidth * 0.22 : this.innerWidth * 0.45;
+            g.append('line')
+                .attr('x1', separatorX)
+                .attr('x2', separatorX)
+                .attr('y1', 0)
+                .attr('y2', this.innerHeight)
+                .attr('stroke', '#ddd')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '5,5');
+
+            if (isComparison) {
+                g.append('line')
+                    .attr('x1', this.innerWidth * 0.72)
+                    .attr('x2', this.innerWidth * 0.72)
+                    .attr('y1', 0)
+                    .attr('y2', this.innerHeight)
+                    .attr('stroke', '#ddd')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '5,5');
+            }
+        }
+
+        // Dessiner chaque box plot
+        samples.forEach((sample, idx) => {
+            const bounds = this.getOutlierBounds(sample.data);
+            const boxCenter = positions[idx];
+
+            // Ligne verticale (whiskers)
+            g.append('line')
+                .attr('x1', boxCenter)
+                .attr('x2', boxCenter)
+                .attr('y1', y(bounds.min))
+                .attr('y2', y(bounds.max))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            // Boîte
+            const box = g.append('rect')
+                .attr('x', boxCenter - boxWidth / 2)
+                .attr('y', y(bounds.q3))
+                .attr('width', boxWidth)
+                .attr('height', y(bounds.q1) - y(bounds.q3))
+                .attr('fill', sample.color)
+                .attr('stroke', 'black')
+                .attr('opacity', 0.7)
+                .attr('class', 'distribution-area')
+                .style('cursor', 'crosshair');
+
+            box.on('mouseenter', function(event) {
+                    self.showTooltip(self.getStatsTooltipContent(sample.stats, sample.name), event);
+                })
+                .on('mousemove', function(event) {
+                    self.positionTooltip(event);
+                })
+                .on('mouseleave', function() {
+                    self.hideTooltip();
+                });
+
+            // Médiane
+            g.append('line')
+                .attr('x1', boxCenter - boxWidth / 2)
+                .attr('x2', boxCenter + boxWidth / 2)
+                .attr('y1', y(bounds.median))
+                .attr('y2', y(bounds.median))
+                .attr('stroke', 'black')
+                .attr('stroke-width', 2);
+
+            // Whisker caps
+            [bounds.min, bounds.max].forEach(value => {
+                g.append('line')
+                    .attr('x1', boxCenter - boxWidth / 4)
+                    .attr('x2', boxCenter + boxWidth / 4)
+                    .attr('y1', y(value))
+                    .attr('y2', y(value))
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1);
+            });
+
+            // Outliers (si data points désactivés)
+            if (!showDataPoints) {
+                const outlierData = [];
+                sample.data.forEach((value, index) => {
+                    if (value < bounds.min || value > bounds.max) {
+                        outlierData.push({ value, index });
+                    }
+                });
+
+                const MAX_OUTLIERS = 500;
+                let displayOutlierData = outlierData;
+                if (outlierData.length > MAX_OUTLIERS) {
+                    const indices = d3.shuffle(d3.range(outlierData.length)).slice(0, MAX_OUTLIERS);
+                    displayOutlierData = indices.map(i => outlierData[i]);
+                }
+
+                const outlierRadius = outlierData.length > 200 ? 2 : 3;
+                const outlierOpacity = outlierData.length > 200 ? 0.3 : 0.5;
+
+                displayOutlierData.forEach(d => {
+                    g.append('circle')
+                        .attr('class', 'outlier interactive')
+                        .attr('cx', boxCenter)
+                        .attr('cy', y(d.value))
+                        .attr('r', outlierRadius)
+                        .attr('fill', 'red')
+                        .attr('opacity', outlierOpacity)
+                        .style('cursor', 'pointer')
+                        .on('mouseenter', function(event) {
+                            d3.select(this).attr('r', outlierRadius * 1.8).attr('opacity', 1);
+                            self.showTooltip(self.getPointTooltipContent(d.index, d.value, sample.name), event);
+                        })
+                        .on('mousemove', function(event) {
+                            self.positionTooltip(event);
+                        })
+                        .on('mouseleave', function() {
+                            d3.select(this).attr('r', outlierRadius).attr('opacity', outlierOpacity);
+                            self.hideTooltip();
+                        });
+                });
+            }
+
+            // Labels sous les box plots
+            if (isComparison) {
+                g.append('text')
+                    .attr('x', boxCenter)
+                    .attr('y', this.innerHeight + 25)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .style('fill', sample.color)
+                    .style('font-weight', '600')
+                    .text(sample.name);
+            }
+        });
+
+        // Axe Y
+        g.append('g').call(d3.axisLeft(y).ticks(8));
+
+        // Label Y
+        g.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -this.innerHeight / 2)
+            .attr('y', -45)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '12px')
+            .text('Valeur');
+    }
+
+    // Violin Plot
+    drawViolinPlot(samples, showDataPoints, isComparison) {
+        const svg = d3.select('#mainChart')
+            .attr('width', this.width)
+            .attr('height', this.height);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+
+        const y = this.getCommonYScale(samples);
+        const self = this;
+
+        // Définir les positions des violins
+        let positions;
+        const violinMaxWidth = isComparison ? this.innerWidth * 0.18 : this.innerWidth * 0.35;
+
+        if (isComparison) {
+            if (showDataPoints) {
+                positions = [this.innerWidth * 0.35, this.innerWidth * 0.75];
+            } else {
+                positions = [this.innerWidth * 0.33, this.innerWidth * 0.67];
+            }
+        } else {
+            positions = [showDataPoints ? this.innerWidth * 0.65 : this.innerWidth / 2];
+        }
+
+        // Zone des data points à gauche (si activée)
+        if (showDataPoints) {
+            samples.forEach((sample, idx) => {
+                const bounds = this.getOutlierBounds(sample.data);
+                const outlierIndices = new Set();
+                sample.data.forEach((value, index) => {
+                    if (value < bounds.min || value > bounds.max) {
+                        outlierIndices.add(index);
+                    }
+                });
+
+                const leftBound = isComparison ?
+                    (idx === 0 ? 10 : this.innerWidth * 0.52) : 10;
+                const rightBound = isComparison ?
+                    (idx === 0 ? this.innerWidth * 0.18 : this.innerWidth * 0.68) : this.innerWidth * 0.35;
+
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+            });
+
+            // Lignes de séparation
+            const separatorX = isComparison ? this.innerWidth * 0.22 : this.innerWidth * 0.45;
+            g.append('line')
+                .attr('x1', separatorX)
+                .attr('x2', separatorX)
+                .attr('y1', 0)
+                .attr('y2', this.innerHeight)
+                .attr('stroke', '#ddd')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '5,5');
+
+            if (isComparison) {
+                g.append('line')
+                    .attr('x1', this.innerWidth * 0.72)
+                    .attr('x2', this.innerWidth * 0.72)
+                    .attr('y1', 0)
+                    .attr('y2', this.innerHeight)
+                    .attr('stroke', '#ddd')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '5,5');
+            }
+        }
+
+        // Dessiner chaque violin
+        samples.forEach((sample, idx) => {
+            const violinCenter = positions[idx];
+
+            // Calcul de la densité
+            const bins = d3.bin()
+                .domain(y.domain())
+                .thresholds(40)(sample.data);
+
+            const maxBinLength = d3.max(bins, d => d.length);
+            const x = d3.scaleLinear()
+                .domain([0, maxBinLength])
+                .range([0, violinMaxWidth]);
+
+            if (showDataPoints) {
+                // Demi-violin (seulement à droite)
+                const halfArea = d3.area()
+                    .curve(d3.curveCatmullRom)
+                    .y(d => y((d.x0 + d.x1) / 2))
+                    .x0(violinCenter)
+                    .x1(d => violinCenter + x(d.length));
+
+                const violinPath = g.append('path')
+                    .datum(bins)
+                    .attr('d', halfArea)
+                    .attr('fill', sample.color)
+                    .attr('opacity', 0.7)
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1)
+                    .attr('class', 'distribution-area')
+                    .style('cursor', 'crosshair');
+
+                violinPath.on('mouseenter', function(event) {
+                        self.showTooltip(self.getStatsTooltipContent(sample.stats, sample.name), event);
+                    })
+                    .on('mousemove', function(event) {
+                        self.positionTooltip(event);
+                    })
+                    .on('mouseleave', function() {
+                        self.hideTooltip();
+                    });
+
+                // Ligne centrale
+                g.append('line')
+                    .attr('x1', violinCenter)
+                    .attr('x2', violinCenter)
+                    .attr('y1', y(d3.min(sample.data)))
+                    .attr('y2', y(d3.max(sample.data)))
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1);
+            } else {
+                // Violin complet (symétrique)
+                const area = d3.area()
+                    .curve(d3.curveCatmullRom)
+                    .y(d => y((d.x0 + d.x1) / 2))
+                    .x0(d => violinCenter - x(d.length))
+                    .x1(d => violinCenter + x(d.length));
+
+                const violinPath = g.append('path')
+                    .datum(bins)
+                    .attr('d', area)
+                    .attr('fill', sample.color)
+                    .attr('opacity', 0.7)
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1)
+                    .attr('class', 'distribution-area')
+                    .style('cursor', 'crosshair');
+
+                violinPath.on('mouseenter', function(event) {
+                        self.showTooltip(self.getStatsTooltipContent(sample.stats, sample.name), event);
+                    })
+                    .on('mousemove', function(event) {
+                        self.positionTooltip(event);
+                    })
+                    .on('mouseleave', function() {
+                        self.hideTooltip();
+                    });
+            }
+
+            // Labels
+            if (isComparison) {
+                g.append('text')
+                    .attr('x', violinCenter)
+                    .attr('y', this.innerHeight + 25)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .style('fill', sample.color)
+                    .style('font-weight', '600')
+                    .text(sample.name);
+            }
+        });
+
+        // Axe Y
+        g.append('g').call(d3.axisLeft(y).ticks(8));
+
+        // Label Y
+        g.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -this.innerHeight / 2)
+            .attr('y', -45)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '12px')
+            .text('Valeur');
+    }
+
+    // Density Plot
+    drawDensityPlot(samples, showDataPoints, isComparison) {
+        const svg = d3.select('#mainChart')
+            .attr('width', this.width)
+            .attr('height', this.height);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+
+        const y = this.getCommonYScale(samples);
+        const self = this;
+
+        // Définir les positions des density plots
+        let positions;
+        const densityMaxWidth = isComparison ? this.innerWidth * 0.18 : this.innerWidth * 0.35;
+
+        if (isComparison) {
+            if (showDataPoints) {
+                positions = [this.innerWidth * 0.32, this.innerWidth * 0.72];
+            } else {
+                positions = [this.innerWidth * 0.28, this.innerWidth * 0.62];
+            }
+        } else {
+            positions = [showDataPoints ? this.innerWidth * 0.55 : this.innerWidth * 0.3];
+        }
+
+        // Zone des data points à gauche (si activée)
+        if (showDataPoints) {
+            samples.forEach((sample, idx) => {
+                const bounds = this.getOutlierBounds(sample.data);
+                const outlierIndices = new Set();
+                sample.data.forEach((value, index) => {
+                    if (value < bounds.min || value > bounds.max) {
+                        outlierIndices.add(index);
+                    }
+                });
+
+                const leftBound = isComparison ?
+                    (idx === 0 ? 10 : this.innerWidth * 0.50) : 10;
+                const rightBound = isComparison ?
+                    (idx === 0 ? this.innerWidth * 0.16 : this.innerWidth * 0.64) : this.innerWidth * 0.35;
+
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+            });
+
+            // Lignes de séparation
+            const separatorX = isComparison ? this.innerWidth * 0.20 : this.innerWidth * 0.45;
+            g.append('line')
+                .attr('x1', separatorX)
+                .attr('x2', separatorX)
+                .attr('y1', 0)
+                .attr('y2', this.innerHeight)
+                .attr('stroke', '#ddd')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '5,5');
+
+            if (isComparison) {
+                g.append('line')
+                    .attr('x1', this.innerWidth * 0.68)
+                    .attr('x2', this.innerWidth * 0.68)
+                    .attr('y1', 0)
+                    .attr('y2', this.innerHeight)
+                    .attr('stroke', '#ddd')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '5,5');
+            }
+        }
+
+        // Dessiner chaque density plot
+        samples.forEach((sample, idx) => {
+            const densityCenter = positions[idx];
+
+            // Calculer la densité
+            const bandwidth = (d3.max(sample.data) - d3.min(sample.data)) / 20;
+            const densityData = this.kernelDensityEstimator(
+                this.kernelEpanechnikov(bandwidth),
+                y.ticks(50),
+                sample.data
+            );
+
+            const xDensity = d3.scaleLinear()
+                .domain([0, d3.max(densityData, d => d[1])])
+                .range([0, densityMaxWidth]);
+
+            // Courbe de densité
+            const area = d3.area()
+                .curve(d3.curveBasis)
+                .y(d => y(d[0]))
+                .x0(densityCenter)
+                .x1(d => densityCenter + xDensity(d[1]));
+
+            const densityPath = g.append('path')
+                .datum(densityData)
+                .attr('d', area)
+                .attr('fill', sample.color)
+                .attr('opacity', 0.5)
+                .attr('class', 'distribution-area')
+                .style('cursor', 'crosshair');
+
+            densityPath.on('mouseenter', function(event) {
+                    self.showTooltip(self.getStatsTooltipContent(sample.stats, sample.name), event);
+                })
+                .on('mousemove', function(event) {
+                    self.positionTooltip(event);
+                })
+                .on('mouseleave', function() {
+                    self.hideTooltip();
+                });
+
+            // Ligne de contour
+            const line = d3.line()
+                .curve(d3.curveBasis)
+                .y(d => y(d[0]))
+                .x(d => densityCenter + xDensity(d[1]));
+
+            g.append('path')
+                .datum(densityData)
+                .attr('d', line)
+                .attr('fill', 'none')
+                .attr('stroke', sample.color)
+                .attr('stroke-width', 2);
+
+            // Ligne de base
+            g.append('line')
+                .attr('x1', densityCenter)
+                .attr('x2', densityCenter)
+                .attr('y1', 0)
+                .attr('y2', this.innerHeight)
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+
+            // Labels
+            if (isComparison) {
+                g.append('text')
+                    .attr('x', densityCenter + densityMaxWidth / 2)
+                    .attr('y', this.innerHeight + 25)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .style('fill', sample.color)
+                    .style('font-weight', '600')
+                    .text(sample.name);
+            } else {
+                g.append('text')
+                    .attr('x', densityCenter + densityMaxWidth / 2)
+                    .attr('y', this.innerHeight + 35)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .text('Densité');
+            }
+        });
+
+        // Axe Y
+        g.append('g').call(d3.axisLeft(y).ticks(8));
+
+        // Label Y
+        g.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -this.innerHeight / 2)
+            .attr('y', -45)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '12px')
+            .text('Valeur');
+    }
+
+    // Dessiner les data points
+    drawDataPoints(g, data, y, leftBoundary, rightBoundary, outlierIndices, color, sampleName) {
         const MAX_VISUAL_POINTS = 2000;
         const totalPoints = data.length;
         const enableHoverForAll = totalPoints < MAX_VISUAL_POINTS;
 
-        // Créer les données avec index
         const indexedData = data.map((value, index) => ({ value, index }));
 
         let displayData = indexedData;
@@ -146,20 +711,19 @@ class Visualizations {
         const center = (leftBoundary + rightBoundary) / 2;
 
         const self = this;
-        const pointColor = this.currentColor;
 
-        g.selectAll('circle.datapoint')
+        g.selectAll(`circle.datapoint-${sampleName.replace(/\s+/g, '')}`)
             .data(displayData)
             .join('circle')
             .attr('class', d => {
                 const isOutlier = outlierIndices.has(d.index);
                 const isInteractive = enableHoverForAll || isOutlier;
-                return `datapoint${isInteractive ? ' interactive' : ''}${isOutlier ? ' outlier-point' : ''}`;
+                return `datapoint datapoint-${sampleName.replace(/\s+/g, '')}${isInteractive ? ' interactive' : ''}${isOutlier ? ' outlier-point' : ''}`;
             })
             .attr('cx', () => center + (Math.random() - 0.5) * jitterWidth)
             .attr('cy', d => y(d.value))
             .attr('r', pointRadius)
-            .attr('fill', d => outlierIndices.has(d.index) ? '#e74c3c' : pointColor)
+            .attr('fill', d => outlierIndices.has(d.index) ? '#e74c3c' : color)
             .attr('opacity', pointOpacity)
             .attr('stroke', 'none')
             .on('mouseenter', function(event, d) {
@@ -168,7 +732,7 @@ class Visualizations {
                     d3.select(this)
                         .attr('r', pointRadius * 1.8)
                         .attr('opacity', 1);
-                    self.showTooltip(self.getPointTooltipContent(d.index, d.value), event);
+                    self.showTooltip(self.getPointTooltipContent(d.index, d.value, sampleName), event);
                 }
             })
             .on('mousemove', function(event, d) {
@@ -195,425 +759,8 @@ class Visualizations {
                 .attr('text-anchor', 'middle')
                 .style('font-size', '9px')
                 .style('fill', '#666')
-                .text(`(${MAX_VISUAL_POINTS}/${totalPoints} points)`);
+                .text(`(${MAX_VISUAL_POINTS}/${totalPoints})`);
         }
-    }
-
-    // Ajouter une zone interactive pour les stats
-    addStatsHoverZone(g, element) {
-        const self = this;
-
-        element
-            .attr('class', (element.attr('class') || '') + ' distribution-area')
-            .style('cursor', 'crosshair')
-            .on('mouseenter', function(event) {
-                self.showTooltip(self.getStatsTooltipContent(), event);
-            })
-            .on('mousemove', function(event) {
-                self.positionTooltip(event);
-            })
-            .on('mouseleave', function() {
-                self.hideTooltip();
-            });
-    }
-
-    // Box Plot avec option data points
-    drawBoxPlotWithPoints(data, showDataPoints, chartId) {
-        const svg = d3.select(`#${chartId}`)
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        const g = svg.append('g')
-            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-
-        const sorted = data.slice().sort(d3.ascending);
-        const q1 = d3.quantile(sorted, 0.25);
-        const median = d3.quantile(sorted, 0.5);
-        const q3 = d3.quantile(sorted, 0.75);
-        const iqr = q3 - q1;
-        const min = Math.max(d3.min(sorted), q1 - 1.5 * iqr);
-        const max = Math.min(d3.max(sorted), q3 + 1.5 * iqr);
-
-        const y = d3.scaleLinear()
-            .domain([d3.min(data), d3.max(data)])
-            .range([this.innerHeight, 0]);
-
-        // Identifier les outliers avec leurs indices
-        const outlierIndices = new Set();
-        data.forEach((value, index) => {
-            if (value < min || value > max) {
-                outlierIndices.add(index);
-            }
-        });
-
-        // Si data points activés, le box plot est à droite
-        const boxCenter = showDataPoints ? this.innerWidth * 0.65 : this.innerWidth / 2;
-        const boxWidth = 80;
-
-        // Zone des data points à gauche
-        if (showDataPoints) {
-            const pointsLeftBoundary = 20;
-            const pointsRightBoundary = this.innerWidth * 0.35;
-            this.drawDataPoints(g, data, y, pointsLeftBoundary, pointsRightBoundary, outlierIndices);
-
-            // Ligne de séparation
-            g.append('line')
-                .attr('x1', this.innerWidth * 0.45)
-                .attr('x2', this.innerWidth * 0.45)
-                .attr('y1', 0)
-                .attr('y2', this.innerHeight)
-                .attr('stroke', '#ddd')
-                .attr('stroke-width', 1)
-                .attr('stroke-dasharray', '5,5');
-        }
-
-        // Ligne verticale (whiskers)
-        g.append('line')
-            .attr('x1', boxCenter)
-            .attr('x2', boxCenter)
-            .attr('y1', y(min))
-            .attr('y2', y(max))
-            .attr('stroke', 'black')
-            .attr('stroke-width', 1);
-
-        // Boîte (avec hover pour les stats)
-        const box = g.append('rect')
-            .attr('x', boxCenter - boxWidth / 2)
-            .attr('y', y(q3))
-            .attr('width', boxWidth)
-            .attr('height', y(q1) - y(q3))
-            .attr('fill', this.currentColor)
-            .attr('stroke', 'black')
-            .attr('opacity', 0.7);
-
-        this.addStatsHoverZone(g, box);
-
-        // Médiane
-        g.append('line')
-            .attr('x1', boxCenter - boxWidth / 2)
-            .attr('x2', boxCenter + boxWidth / 2)
-            .attr('y1', y(median))
-            .attr('y2', y(median))
-            .attr('stroke', 'black')
-            .attr('stroke-width', 2);
-
-        // Whisker caps
-        [min, max].forEach(value => {
-            g.append('line')
-                .attr('x1', boxCenter - boxWidth / 4)
-                .attr('x2', boxCenter + boxWidth / 4)
-                .attr('y1', y(value))
-                .attr('y2', y(value))
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1);
-        });
-
-        // Outliers (seulement si data points désactivés)
-        if (!showDataPoints) {
-            const outliers = sorted.filter(value => value < min || value > max);
-            const MAX_OUTLIERS_DISPLAY = 500;
-            let displayOutliers = outliers;
-            if (outliers.length > MAX_OUTLIERS_DISPLAY) {
-                const indices = d3.shuffle(d3.range(outliers.length)).slice(0, MAX_OUTLIERS_DISPLAY);
-                displayOutliers = indices.map(i => outliers[i]);
-            }
-
-            const self = this;
-            const outlierRadius = outliers.length > 200 ? 2 : 3;
-            const outlierOpacity = outliers.length > 200 ? 0.3 : 0.5;
-
-            // Trouver les indices des outliers dans les données originales
-            const outlierData = [];
-            data.forEach((value, index) => {
-                if (value < min || value > max) {
-                    outlierData.push({ value, index });
-                }
-            });
-
-            // Sampler si nécessaire
-            let displayOutlierData = outlierData;
-            if (outlierData.length > MAX_OUTLIERS_DISPLAY) {
-                const indices = d3.shuffle(d3.range(outlierData.length)).slice(0, MAX_OUTLIERS_DISPLAY);
-                displayOutlierData = indices.map(i => outlierData[i]);
-            }
-
-            displayOutlierData.forEach(d => {
-                g.append('circle')
-                    .attr('class', 'outlier interactive')
-                    .attr('cx', boxCenter)
-                    .attr('cy', y(d.value))
-                    .attr('r', outlierRadius)
-                    .attr('fill', 'red')
-                    .attr('opacity', outlierOpacity)
-                    .style('cursor', 'pointer')
-                    .on('mouseenter', function(event) {
-                        d3.select(this)
-                            .attr('r', outlierRadius * 1.8)
-                            .attr('opacity', 1);
-                        self.showTooltip(self.getPointTooltipContent(d.index, d.value), event);
-                    })
-                    .on('mousemove', function(event) {
-                        self.positionTooltip(event);
-                    })
-                    .on('mouseleave', function() {
-                        d3.select(this)
-                            .attr('r', outlierRadius)
-                            .attr('opacity', outlierOpacity);
-                        self.hideTooltip();
-                    });
-            });
-        }
-
-        // Axe Y
-        g.append('g')
-            .call(d3.axisLeft(y).ticks(8));
-
-        // Label Y
-        g.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -this.innerHeight / 2)
-            .attr('y', -45)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .text('Valeur');
-    }
-
-    // Violin Plot avec option data points (moitié droite si points activés)
-    drawViolinPlotWithPoints(data, showDataPoints, chartId) {
-        const svg = d3.select(`#${chartId}`)
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        const g = svg.append('g')
-            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-
-        const y = d3.scaleLinear()
-            .domain(d3.extent(data))
-            .range([this.innerHeight, 0]);
-
-        // Calculer les outliers pour le violin plot (même règle que box plot)
-        const sorted = data.slice().sort(d3.ascending);
-        const q1 = d3.quantile(sorted, 0.25);
-        const q3 = d3.quantile(sorted, 0.75);
-        const iqr = q3 - q1;
-        const minWhisker = Math.max(d3.min(sorted), q1 - 1.5 * iqr);
-        const maxWhisker = Math.min(d3.max(sorted), q3 + 1.5 * iqr);
-
-        const outlierIndices = new Set();
-        data.forEach((value, index) => {
-            if (value < minWhisker || value > maxWhisker) {
-                outlierIndices.add(index);
-            }
-        });
-
-        // Calcul de la densité
-        const bins = d3.bin()
-            .domain(y.domain())
-            .thresholds(40)(data);
-
-        const maxBinLength = d3.max(bins, d => d.length);
-
-        // Position du violin selon si data points ou non
-        const violinCenter = showDataPoints ? this.innerWidth * 0.65 : this.innerWidth / 2;
-        const violinMaxWidth = showDataPoints ? this.innerWidth * 0.3 : this.innerWidth * 0.4;
-
-        const x = d3.scaleLinear()
-            .domain([0, maxBinLength])
-            .range([0, violinMaxWidth]);
-
-        // Zone des data points à gauche
-        if (showDataPoints) {
-            const pointsLeftBoundary = 20;
-            const pointsRightBoundary = this.innerWidth * 0.35;
-            this.drawDataPoints(g, data, y, pointsLeftBoundary, pointsRightBoundary, outlierIndices);
-
-            // Ligne de séparation
-            g.append('line')
-                .attr('x1', this.innerWidth * 0.45)
-                .attr('x2', this.innerWidth * 0.45)
-                .attr('y1', 0)
-                .attr('y2', this.innerHeight)
-                .attr('stroke', '#ddd')
-                .attr('stroke-width', 1)
-                .attr('stroke-dasharray', '5,5');
-
-            // Demi-violin (seulement à droite)
-            const halfArea = d3.area()
-                .curve(d3.curveCatmullRom)
-                .y(d => y((d.x0 + d.x1) / 2))
-                .x0(violinCenter)
-                .x1(d => violinCenter + x(d.length));
-
-            const violinPath = g.append('path')
-                .datum(bins)
-                .attr('d', halfArea)
-                .attr('fill', this.currentColor)
-                .attr('opacity', 0.7)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1);
-
-            this.addStatsHoverZone(g, violinPath);
-
-            // Ligne centrale du demi-violin
-            g.append('line')
-                .attr('x1', violinCenter)
-                .attr('x2', violinCenter)
-                .attr('y1', y(d3.min(data)))
-                .attr('y2', y(d3.max(data)))
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1);
-        } else {
-            // Violin complet (symétrique)
-            const area = d3.area()
-                .curve(d3.curveCatmullRom)
-                .y(d => y((d.x0 + d.x1) / 2))
-                .x0(d => violinCenter - x(d.length))
-                .x1(d => violinCenter + x(d.length));
-
-            const violinPath = g.append('path')
-                .datum(bins)
-                .attr('d', area)
-                .attr('fill', this.currentColor)
-                .attr('opacity', 0.7)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1);
-
-            this.addStatsHoverZone(g, violinPath);
-        }
-
-        // Axe Y
-        g.append('g')
-            .call(d3.axisLeft(y).ticks(8));
-
-        // Label Y
-        g.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -this.innerHeight / 2)
-            .attr('y', -45)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .text('Valeur');
-    }
-
-    // Density Plot avec option data points
-    drawDensityPlotWithPoints(data, showDataPoints, chartId) {
-        const svg = d3.select(`#${chartId}`)
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        const g = svg.append('g')
-            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-
-        // Pour density plot, on utilise une échelle verticale pour les valeurs
-        const y = d3.scaleLinear()
-            .domain(d3.extent(data))
-            .range([this.innerHeight, 0]);
-
-        // Calculer les outliers (même règle que box plot)
-        const sorted = data.slice().sort(d3.ascending);
-        const q1 = d3.quantile(sorted, 0.25);
-        const q3 = d3.quantile(sorted, 0.75);
-        const iqr = q3 - q1;
-        const minWhisker = Math.max(d3.min(sorted), q1 - 1.5 * iqr);
-        const maxWhisker = Math.min(d3.max(sorted), q3 + 1.5 * iqr);
-
-        const outlierIndices = new Set();
-        data.forEach((value, index) => {
-            if (value < minWhisker || value > maxWhisker) {
-                outlierIndices.add(index);
-            }
-        });
-
-        // Zone des data points à gauche
-        if (showDataPoints) {
-            const pointsLeftBoundary = 20;
-            const pointsRightBoundary = this.innerWidth * 0.35;
-            this.drawDataPoints(g, data, y, pointsLeftBoundary, pointsRightBoundary, outlierIndices);
-
-            // Ligne de séparation
-            g.append('line')
-                .attr('x1', this.innerWidth * 0.45)
-                .attr('x2', this.innerWidth * 0.45)
-                .attr('y1', 0)
-                .attr('y2', this.innerHeight)
-                .attr('stroke', '#ddd')
-                .attr('stroke-width', 1)
-                .attr('stroke-dasharray', '5,5');
-        }
-
-        // Calculer la densité
-        const bandwidth = (d3.max(data) - d3.min(data)) / 20;
-        const densityData = this.kernelDensityEstimator(
-            this.kernelEpanechnikov(bandwidth),
-            y.ticks(50),
-            data
-        );
-
-        // La densité sera affichée horizontalement (vers la droite)
-        const densityCenter = showDataPoints ? this.innerWidth * 0.55 : this.innerWidth * 0.3;
-        const densityMaxWidth = showDataPoints ? this.innerWidth * 0.4 : this.innerWidth * 0.6;
-
-        const xDensity = d3.scaleLinear()
-            .domain([0, d3.max(densityData, d => d[1])])
-            .range([0, densityMaxWidth]);
-
-        // Courbe de densité (affichée horizontalement)
-        const area = d3.area()
-            .curve(d3.curveBasis)
-            .y(d => y(d[0]))
-            .x0(densityCenter)
-            .x1(d => densityCenter + xDensity(d[1]));
-
-        const densityPath = g.append('path')
-            .datum(densityData)
-            .attr('d', area)
-            .attr('fill', this.currentColor)
-            .attr('opacity', 0.5);
-
-        this.addStatsHoverZone(g, densityPath);
-
-        // Ligne de contour
-        const line = d3.line()
-            .curve(d3.curveBasis)
-            .y(d => y(d[0]))
-            .x(d => densityCenter + xDensity(d[1]));
-
-        g.append('path')
-            .datum(densityData)
-            .attr('d', line)
-            .attr('fill', 'none')
-            .attr('stroke', this.currentColor)
-            .attr('stroke-width', 2);
-
-        // Ligne de base
-        g.append('line')
-            .attr('x1', densityCenter)
-            .attr('x2', densityCenter)
-            .attr('y1', 0)
-            .attr('y2', this.innerHeight)
-            .attr('stroke', 'black')
-            .attr('stroke-width', 1);
-
-        // Axe Y
-        g.append('g')
-            .call(d3.axisLeft(y).ticks(8));
-
-        // Label Y
-        g.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -this.innerHeight / 2)
-            .attr('y', -45)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .text('Valeur');
-
-        // Label densité
-        g.append('text')
-            .attr('x', densityCenter + densityMaxWidth / 2)
-            .attr('y', this.innerHeight + 35)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .text('Densité');
     }
 
     // Kernel Density Estimation helpers

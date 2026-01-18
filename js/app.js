@@ -41,11 +41,8 @@ const sample2Section = document.getElementById('sample2Section');
 // Éléments du DOM - Configuration du graphique
 const chartTypeSelect = document.getElementById('chartType');
 const showDataPointsCheckbox = document.getElementById('showDataPoints');
-const chartTitle1 = document.getElementById('chartTitle1');
-const chartTitle2 = document.getElementById('chartTitle2');
-const chart1Container = document.getElementById('chart1Container');
-const chart2Container = document.getElementById('chart2Container');
-const vizContainer = document.getElementById('vizContainer');
+const chartTitle = document.getElementById('chartTitle');
+const chartLegend = document.getElementById('chartLegend');
 
 // Éléments de statistiques - Échantillon 1
 const statElements1 = {
@@ -78,6 +75,12 @@ const chartTitles = {
     boxplot: 'Box Plot',
     violinplot: 'Violin Plot',
     density: 'Density Plot'
+};
+
+// Couleurs des échantillons
+const sampleColors = {
+    sample1: '#4682b4',
+    sample2: '#e67e22'
 };
 
 // Stockage des données courantes
@@ -134,9 +137,8 @@ addSampleBtn.addEventListener('click', () => {
     comparisonMode = true;
     sample2Section.style.display = 'block';
     addSampleContainer.style.display = 'none';
-    chart2Container.style.display = 'block';
     statsSample2.style.display = 'block';
-    vizContainer.classList.add('comparison-mode');
+    chartLegend.style.display = 'flex';
 
     // Générer les données pour le second échantillon
     generateAndVisualize();
@@ -146,9 +148,8 @@ removeSampleBtn.addEventListener('click', () => {
     comparisonMode = false;
     sample2Section.style.display = 'none';
     addSampleContainer.style.display = 'block';
-    chart2Container.style.display = 'none';
     statsSample2.style.display = 'none';
-    vizContainer.classList.remove('comparison-mode');
+    chartLegend.style.display = 'none';
 
     // Nettoyer les données du second échantillon
     currentData2 = null;
@@ -235,17 +236,28 @@ function updateVisualization() {
     const showDataPoints = showDataPointsCheckbox.checked;
     const chartTypeName = chartTitles[chartType] || 'Box Plot';
 
-    // Mettre à jour les titres
-    chartTitle1.textContent = comparisonMode ? `${chartTypeName} - Échantillon 1` : chartTypeName;
+    // Mettre à jour le titre
+    chartTitle.textContent = comparisonMode ? `${chartTypeName} - Comparaison` : chartTypeName;
 
-    // Dessiner le graphique 1
-    visualizations.draw(currentData1, chartType, showDataPoints, currentStats1, 'chart1');
+    // Préparer les échantillons
+    const samples = [{
+        data: currentData1,
+        stats: currentStats1,
+        color: sampleColors.sample1,
+        name: 'Échantillon 1'
+    }];
 
-    // Si mode comparaison, dessiner le graphique 2
     if (comparisonMode && currentData2) {
-        chartTitle2.textContent = `${chartTypeName} - Échantillon 2`;
-        visualizations.draw(currentData2, chartType, showDataPoints, currentStats2, 'chart2', '#e67e22');
+        samples.push({
+            data: currentData2,
+            stats: currentStats2,
+            color: sampleColors.sample2,
+            name: 'Échantillon 2'
+        });
     }
+
+    // Dessiner le graphique
+    visualizations.draw(samples, chartType, showDataPoints);
 }
 
 // Fonction principale pour générer et visualiser
@@ -282,39 +294,21 @@ generateBtn.addEventListener('click', generateAndVisualize);
 // Fonction d'export
 exportBtn.addEventListener('click', () => {
     const chartType = chartTypeSelect.value;
-
-    // Exporter le graphique 1
-    const svg1 = document.getElementById('chart1');
+    const svg = document.getElementById('mainChart');
     const serializer = new XMLSerializer();
-    const svgString1 = serializer.serializeToString(svg1);
-    const blob1 = new Blob([svgString1], { type: 'image/svg+xml' });
-    const url1 = URL.createObjectURL(blob1);
+    const svgString = serializer.serializeToString(svg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
 
-    const link1 = document.createElement('a');
-    link1.href = url1;
-    link1.download = comparisonMode ? `${chartType}_sample1.svg` : `${chartType}.svg`;
-    document.body.appendChild(link1);
-    link1.click();
-    document.body.removeChild(link1);
-    URL.revokeObjectURL(url1);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = comparisonMode ? `${chartType}_comparison.svg` : `${chartType}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    // Si mode comparaison, exporter aussi le graphique 2
-    if (comparisonMode) {
-        const svg2 = document.getElementById('chart2');
-        const svgString2 = serializer.serializeToString(svg2);
-        const blob2 = new Blob([svgString2], { type: 'image/svg+xml' });
-        const url2 = URL.createObjectURL(blob2);
-
-        const link2 = document.createElement('a');
-        link2.href = url2;
-        link2.download = `${chartType}_sample2.svg`;
-        document.body.appendChild(link2);
-        link2.click();
-        document.body.removeChild(link2);
-        URL.revokeObjectURL(url2);
-    }
-
-    alert(comparisonMode ? 'Graphiques exportés avec succès !' : 'Graphique exporté avec succès !');
+    alert('Graphique exporté avec succès !');
 });
 
 // Génération initiale au chargement de la page
