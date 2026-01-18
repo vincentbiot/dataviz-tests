@@ -311,3 +311,75 @@ header h1 {
         grid-template-columns: 1fr;
     }
 }
+
+/* Tooltip pour les interactions */
+.tooltip {
+    position: fixed;
+    background: rgba(33, 37, 41, 0.95);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 1000;
+    max-width: 280px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    line-height: 1.5;
+}
+
+.tooltip.visible {
+    opacity: 1;
+}
+
+.tooltip .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #667eea;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+    padding-bottom: 6px;
+}
+
+.tooltip .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 3px 0;
+}
+
+.tooltip .tooltip-label {
+    color: #adb5bd;
+}
+
+.tooltip .tooltip-value {
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+/* Styles pour les points interactifs */
+.datapoint.interactive {
+    cursor: pointer;
+    transition: r 0.1s ease, opacity 0.1s ease;
+}
+
+.datapoint.interactive:hover {
+    opacity: 1 !important;
+}
+
+.outlier.interactive {
+    cursor: pointer;
+    transition: r 0.1s ease, opacity 0.1s ease;
+}
+
+.outlier.interactive:hover {
+    opacity: 1 !important;
+}
+
+/* Zone interactive pour les stats du graphe */
+.distribution-area {
+    cursor: crosshair;
+}
+
+.distribution-area:hover {
+    opacity: 0.85;
+}

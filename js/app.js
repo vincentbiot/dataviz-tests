@@ -42,6 +42,7 @@ const chartTitles = {
 
 // Stockage des données courantes
 let currentData = null;
+let currentStats = null;
 
 // Mise à jour des affichages de valeurs avec step dynamique
 sampleSizeInput.addEventListener('input', (e) => {
@@ -138,8 +139,8 @@ function updateVisualization() {
     // Mettre à jour le titre
     chartTitle.textContent = chartTitles[chartType] || 'Box Plot';
 
-    // Dessiner le graphique
-    visualizations.draw(currentData, chartType, showDataPoints);
+    // Dessiner le graphique avec les statistiques pour les tooltips
+    visualizations.draw(currentData, chartType, showDataPoints, currentStats);
 }
 
 // Fonction principale pour générer et visualiser
@@ -154,10 +155,10 @@ function generateAndVisualize() {
     currentData = dataGenerator.generate(params);
 
     // Calculer les statistiques
-    const stats = dataGenerator.getStats();
+    currentStats = dataGenerator.getStats();
 
     // Mettre à jour les statistiques affichées
-    updateStats(stats);
+    updateStats(currentStats);
 
     // Mettre à jour la visualisation
     updateVisualization();
