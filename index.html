@@ -62,7 +62,28 @@
 
                 <div class="button-group">
                     <button id="generateBtn" class="btn btn-primary">Générer les données</button>
-                    <button id="exportBtn" class="btn btn-secondary">Exporter les graphiques</button>
+                    <button id="exportBtn" class="btn btn-secondary">Exporter le graphique</button>
+                </div>
+
+                <!-- Configurateur de visualisation -->
+                <div class="viz-config-panel">
+                    <h3>Configuration du graphique</h3>
+
+                    <div class="control-group">
+                        <label for="chartType">Type de représentation</label>
+                        <select id="chartType">
+                            <option value="boxplot">Box Plot</option>
+                            <option value="violinplot">Violin Plot</option>
+                            <option value="density">Density Plot</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="showDataPoints">
+                            <span class="toggle-text">Afficher les data points</span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Statistiques descriptives -->
@@ -105,33 +126,11 @@
                 </div>
             </aside>
 
-            <!-- Zone de visualisations -->
+            <!-- Zone de visualisation -->
             <main class="visualization-area">
-                <div class="viz-grid">
-                    <div class="viz-container">
-                        <h3>Histogramme</h3>
-                        <svg id="histogram"></svg>
-                    </div>
-                    <div class="viz-container">
-                        <h3>Box Plot</h3>
-                        <svg id="boxplot"></svg>
-                    </div>
-                    <div class="viz-container">
-                        <h3>Violin Plot</h3>
-                        <svg id="violinplot"></svg>
-                    </div>
-                    <div class="viz-container">
-                        <h3>Dot Plot</h3>
-                        <svg id="dotplot"></svg>
-                    </div>
-                    <div class="viz-container">
-                        <h3>Density Plot</h3>
-                        <svg id="densityplot"></svg>
-                    </div>
-                    <div class="viz-container">
-                        <h3>Bar Chart (avec stats)</h3>
-                        <svg id="barchart"></svg>
-                    </div>
+                <div class="single-viz-container">
+                    <h3 id="chartTitle">Box Plot</h3>
+                    <svg id="mainChart"></svg>
                 </div>
             </main>
         </div>

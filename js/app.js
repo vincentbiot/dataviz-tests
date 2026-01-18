@@ -2,7 +2,7 @@
 const dataGenerator = new DataGenerator();
 const visualizations = new Visualizations();
 
-// Éléments du DOM
+// Éléments du DOM - Paramètres de génération
 const sampleSizeInput = document.getElementById('sampleSize');
 const sampleSizeValue = document.getElementById('sampleSizeValue');
 const minValueInput = document.getElementById('minValue');
@@ -16,6 +16,11 @@ const generateBtn = document.getElementById('generateBtn');
 const exportBtn = document.getElementById('exportBtn');
 const normalParams = document.getElementById('normalParams');
 
+// Éléments du DOM - Configuration du graphique
+const chartTypeSelect = document.getElementById('chartType');
+const showDataPointsCheckbox = document.getElementById('showDataPoints');
+const chartTitle = document.getElementById('chartTitle');
+
 // Éléments de statistiques
 const statElements = {
     n: document.getElementById('statN'),
@@ -27,6 +32,16 @@ const statElements = {
     min: document.getElementById('statMin'),
     max: document.getElementById('statMax')
 };
+
+// Mapping des titres
+const chartTitles = {
+    boxplot: 'Box Plot',
+    violinplot: 'Violin Plot',
+    density: 'Density Plot'
+};
+
+// Stockage des données courantes
+let currentData = null;
 
 // Mise à jour des affichages de valeurs avec step dynamique
 sampleSizeInput.addEventListener('input', (e) => {
@@ -54,6 +69,15 @@ distributionSelect.addEventListener('change', (e) => {
     } else {
         normalParams.style.display = 'none';
     }
+});
+
+// Écouter les changements de configuration du graphique
+chartTypeSelect.addEventListener('change', () => {
+    updateVisualization();
+});
+
+showDataPointsCheckbox.addEventListener('change', () => {
+    updateVisualization();
 });
 
 // Fonction pour récupérer les paramètres
@@ -104,6 +128,20 @@ function updateStats(stats) {
     statElements.max.textContent = stats.max;
 }
 
+// Fonction pour mettre à jour la visualisation (sans régénérer les données)
+function updateVisualization() {
+    if (!currentData) return;
+
+    const chartType = chartTypeSelect.value;
+    const showDataPoints = showDataPointsCheckbox.checked;
+
+    // Mettre à jour le titre
+    chartTitle.textContent = chartTitles[chartType] || 'Box Plot';
+
+    // Dessiner le graphique
+    visualizations.draw(currentData, chartType, showDataPoints);
+}
+
 // Fonction principale pour générer et visualiser
 function generateAndVisualize() {
     const params = getParameters();
@@ -113,7 +151,7 @@ function generateAndVisualize() {
     }
 
     // Générer les données
-    const data = dataGenerator.generate(params);
+    currentData = dataGenerator.generate(params);
 
     // Calculer les statistiques
     const stats = dataGenerator.getStats();
@@ -121,8 +159,8 @@ function generateAndVisualize() {
     // Mettre à jour les statistiques affichées
     updateStats(stats);
 
-    // Dessiner toutes les visualisations
-    visualizations.drawAll(data, stats);
+    // Mettre à jour la visualisation
+    updateVisualization();
 }
 
 // Event listener pour le bouton de génération
@@ -130,25 +168,23 @@ generateBtn.addEventListener('click', generateAndVisualize);
 
 // Fonction d'export
 exportBtn.addEventListener('click', () => {
-    const svgElements = document.querySelectorAll('svg');
+    const svg = document.getElementById('mainChart');
+    const chartType = chartTypeSelect.value;
 
-    svgElements.forEach((svg, index) => {
-        const vizNames = ['histogram', 'boxplot', 'violinplot', 'dotplot', 'densityplot', 'barchart'];
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svg);
-        const blob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
 
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${vizNames[index]}.svg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    });
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${chartType}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    alert('Graphiques exportés avec succès !');
+    alert('Graphique exporté avec succès !');
 });
 
 // Génération initiale au chargement de la page
