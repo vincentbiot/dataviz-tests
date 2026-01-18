@@ -229,16 +229,19 @@
 
             <!-- Zone de visualisation -->
             <main class="visualization-area">
-                <div class="viz-container" id="vizContainer">
-                    <!-- Graphique 1 -->
-                    <div class="single-viz-container" id="chart1Container">
-                        <h3 id="chartTitle1">Box Plot - Échantillon 1</h3>
-                        <svg id="chart1"></svg>
-                    </div>
-                    <!-- Graphique 2 (caché par défaut) -->
-                    <div class="single-viz-container" id="chart2Container" style="display: none;">
-                        <h3 id="chartTitle2">Box Plot - Échantillon 2</h3>
-                        <svg id="chart2"></svg>
+                <div class="single-viz-container" id="chartContainer">
+                    <h3 id="chartTitle">Box Plot</h3>
+                    <svg id="mainChart"></svg>
+                    <!-- Légende (visible uniquement en mode comparaison) -->
+                    <div class="chart-legend" id="chartLegend" style="display: none;">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #4682b4;"></span>
+                            <span class="legend-label">Échantillon 1</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #e67e22;"></span>
+                            <span class="legend-label">Échantillon 2</span>
+                        </div>
                     </div>
                 </div>
             </main>
