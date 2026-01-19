@@ -79,8 +79,8 @@ const chartTitles = {
 
 // Couleurs des échantillons
 const sampleColors = {
-    sample1: '#4682b4',
-    sample2: '#e67e22'
+    sample1: '#3A9484',  // ATIH graph-4 - Teal
+    sample2: '#D276CA'   // Rose Graphs - Main
 };
 
 // Stockage des données courantes

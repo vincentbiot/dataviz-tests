@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test de Datavisualisations - Données Simulées</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Application de Test de Datavisualisations</h1>
+            <h1>Visualisation de distributions numériques</h1>
             <p class="subtitle">Comparez différentes représentations graphiques de données numériques simulées</p>
         </header>
 
@@ -137,7 +140,7 @@
 
                     <div class="control-group toggle-group">
                         <label class="toggle-label">
-                            <input type="checkbox" id="showDataPoints">
+                            <input type="checkbox" id="showDataPoints" checked>
                             <span class="toggle-text">Afficher les data points</span>
                         </label>
                     </div>
@@ -235,11 +238,11 @@
                     <!-- Légende (visible uniquement en mode comparaison) -->
                     <div class="chart-legend" id="chartLegend" style="display: none;">
                         <div class="legend-item">
-                            <span class="legend-color" style="background: #4682b4;"></span>
+                            <span class="legend-color" style="background: #3A9484;"></span>
                             <span class="legend-label">Échantillon 1</span>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-color" style="background: #e67e22;"></span>
+                            <span class="legend-color" style="background: #D276CA;"></span>
                             <span class="legend-label">Échantillon 2</span>
                         </div>
                     </div>

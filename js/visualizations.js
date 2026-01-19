@@ -7,8 +7,8 @@ class Visualizations {
         this.innerHeight = this.height - this.margin.top - this.margin.bottom;
         this.tooltip = null;
         this.colors = {
-            sample1: '#4682b4',
-            sample2: '#e67e22'
+            sample1: '#3A9484',
+            sample2: '#D276CA'
         };
     }
 
@@ -308,7 +308,7 @@ class Visualizations {
                         .attr('cx', boxCenter)
                         .attr('cy', y(d.value))
                         .attr('r', outlierRadius)
-                        .attr('fill', 'red')
+                        .attr('fill', '#DF6277')
                         .attr('opacity', outlierOpacity)
                         .style('cursor', 'pointer')
                         .on('mouseenter', function(event) {
@@ -723,7 +723,7 @@ class Visualizations {
             .attr('cx', () => center + (Math.random() - 0.5) * jitterWidth)
             .attr('cy', d => y(d.value))
             .attr('r', pointRadius)
-            .attr('fill', d => outlierIndices.has(d.index) ? '#e74c3c' : color)
+            .attr('fill', d => outlierIndices.has(d.index) ? '#DF6277' : color)
             .attr('opacity', pointOpacity)
             .attr('stroke', 'none')
             .on('mouseenter', function(event, d) {
