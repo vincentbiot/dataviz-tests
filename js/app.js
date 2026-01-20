@@ -44,6 +44,10 @@ const showDataPointsCheckbox = document.getElementById('showDataPoints');
 const chartTitle = document.getElementById('chartTitle');
 const chartLegend = document.getElementById('chartLegend');
 
+// Références pour l'établissement
+const establishmentNameInput = document.getElementById('establishmentName');
+const establishmentValueInput = document.getElementById('establishmentValue');
+
 // Éléments de statistiques - Échantillon 1
 const statElements1 = {
     n: document.getElementById('statN1'),
@@ -168,6 +172,19 @@ showDataPointsCheckbox.addEventListener('change', () => {
     updateVisualization();
 });
 
+// Mettre à jour la visualisation quand l'établissement change (sans régénérer les données)
+establishmentNameInput.addEventListener('input', () => {
+    if (currentData1) {
+        updateVisualization();
+    }
+});
+
+establishmentValueInput.addEventListener('input', () => {
+    if (currentData1) {
+        updateVisualization();
+    }
+});
+
 // Fonction pour récupérer les paramètres d'un échantillon
 function getParameters(sampleNumber) {
     if (sampleNumber === 1) {
@@ -256,8 +273,15 @@ function updateVisualization() {
         });
     }
 
+    // Préparer les données d'établissement
+    const establishmentValue = parseFloat(establishmentValueInput.value);
+    const establishment = {
+        name: establishmentNameInput.value.trim() || 'Établissement',
+        value: isNaN(establishmentValue) ? null : establishmentValue
+    };
+
     // Dessiner le graphique
-    visualizations.draw(samples, chartType, showDataPoints);
+    visualizations.draw(samples, chartType, showDataPoints, establishment);
 }
 
 // Fonction principale pour générer et visualiser
