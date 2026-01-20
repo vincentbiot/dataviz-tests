@@ -559,3 +559,18 @@ header h1 {
 .distribution-area:hover {
     opacity: 0.85;
 }
+
+/* Ligne d'établissement - styles pour interactions futures */
+.establishment-line {
+    cursor: crosshair;
+}
+
+.establishment-label {
+    pointer-events: none;
+    text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
+.establishment-marker {
+    stroke: white;
+    stroke-width: 2;
+}
