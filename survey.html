@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réponses Questionnaires - DataViz Tests</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="main-navigation">
+        <div class="nav-container">
+            <h1 class="nav-logo">DataViz Tests</h1>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Distributions Statistiques</a></li>
+                <li><a href="survey.html" class="nav-link active">Réponses Questionnaires</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Visualisation de réponses à des questionnaires</h1>
+            <p class="subtitle">Analysez et comparez des données qualitatives de questionnaires à choix multiples</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Panneau de contrôle -->
+            <aside class="control-panel">
+                <!-- Questionnaire 1 -->
+                <div class="sample-section" id="survey1Section">
+                    <h2>Questionnaire 1</h2>
+
+                    <div class="control-group">
+                        <label for="numRespondents1">Nombre de répondants</label>
+                        <input type="range" id="numRespondents1" min="10" max="1000" value="100" step="10">
+                        <span class="value-display" id="numRespondentsValue1">100</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="numOptions1">Nombre de réponses possibles</label>
+                        <input type="range" id="numOptions1" min="2" max="10" value="4" step="1">
+                        <span class="value-display" id="numOptionsValue1">4</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="responseMode1">Modalité de réponse</label>
+                        <select id="responseMode1">
+                            <option value="single">Réponse unique (1 choix par répondant)</option>
+                            <option value="multiple">Réponses multiples (plusieurs choix possibles)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="multipleParams1" style="display: none;">
+                        <label for="avgResponsesPerPerson1">Nombre moyen de réponses par répondant</label>
+                        <input type="range" id="avgResponsesPerPerson1" min="1" max="5" value="2" step="0.5">
+                        <span class="value-display" id="avgResponsesValue1">2</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Mode de génération</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="generationMode1" value="auto" checked>
+                                <span>Génération automatique</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="generationMode1" value="manual">
+                                <span>Configuration manuelle</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Configuration manuelle des réponses -->
+                    <div class="manual-config" id="manualConfig1" style="display: none;">
+                        <h4>Configuration des réponses</h4>
+                        <div id="responseSliders1" class="response-sliders">
+                            <!-- Sliders générés dynamiquement -->
+                        </div>
+                        <div class="total-display">
+                            <span>Total : <strong id="totalResponses1">0</strong></span>
+                            <span id="targetTotal1" class="text-muted">(Objectif: 100)</span>
+                        </div>
+                    </div>
+
+                    <!-- Upload de fichier -->
+                    <div class="control-group file-upload-section">
+                        <label>Importer des données</label>
+                        <input type="file" id="fileUpload1" accept=".csv,.json" class="file-input">
+                        <button class="btn btn-secondary btn-small" onclick="document.getElementById('fileUpload1').click()">
+                            📁 Choisir un fichier
+                        </button>
+                        <span class="file-name" id="fileName1"></span>
+                    </div>
+                </div>
+
+                <!-- Bouton pour ajouter un questionnaire -->
+                <div class="add-sample-container" id="addSurveyContainer">
+                    <button id="addSurveyBtn" class="btn btn-add-sample">+ Ajouter un questionnaire</button>
+                </div>
+
+                <!-- Questionnaire 2 (caché par défaut) -->
+                <div class="sample-section sample-section-2" id="survey2Section" style="display: none;">
+                    <div class="sample-header">
+                        <h2>Questionnaire 2</h2>
+                        <button id="removeSurveyBtn" class="btn-remove-sample" title="Supprimer le questionnaire 2">×</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="numRespondents2">Nombre de répondants</label>
+                        <input type="range" id="numRespondents2" min="10" max="1000" value="100" step="10">
+                        <span class="value-display" id="numRespondentsValue2">100</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="numOptions2">Nombre de réponses possibles</label>
+                        <input type="range" id="numOptions2" min="2" max="10" value="4" step="1">
+                        <span class="value-display" id="numOptionsValue2">4</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="responseMode2">Modalité de réponse</label>
+                        <select id="responseMode2">
+                            <option value="single">Réponse unique (1 choix par répondant)</option>
+                            <option value="multiple">Réponses multiples (plusieurs choix possibles)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="multipleParams2" style="display: none;">
+                        <label for="avgResponsesPerPerson2">Nombre moyen de réponses par répondant</label>
+                        <input type="range" id="avgResponsesPerPerson2" min="1" max="5" value="2" step="0.5">
+                        <span class="value-display" id="avgResponsesValue2">2</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Mode de génération</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="generationMode2" value="auto" checked>
+                                <span>Génération automatique</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="generationMode2" value="manual">
+                                <span>Configuration manuelle</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Configuration manuelle des réponses -->
+                    <div class="manual-config" id="manualConfig2" style="display: none;">
+                        <h4>Configuration des réponses</h4>
+                        <div id="responseSliders2" class="response-sliders">
+                            <!-- Sliders générés dynamiquement -->
+                        </div>
+                        <div class="total-display">
+                            <span>Total : <strong id="totalResponses2">0</strong></span>
+                            <span id="targetTotal2" class="text-muted">(Objectif: 100)</span>
+                        </div>
+                    </div>
+
+                    <!-- Upload de fichier -->
+                    <div class="control-group file-upload-section">
+                        <label>Importer des données</label>
+                        <input type="file" id="fileUpload2" accept=".csv,.json" class="file-input">
+                        <button class="btn btn-secondary btn-small" onclick="document.getElementById('fileUpload2').click()">
+                            📁 Choisir un fichier
+                        </button>
+                        <span class="file-name" id="fileName2"></span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="generateBtn" class="btn btn-primary">Générer les données</button>
+                    <button id="exportBtn" class="btn btn-secondary">Exporter le graphique</button>
+                </div>
+
+                <!-- Configurateur de visualisation -->
+                <div class="viz-config-panel">
+                    <h3>Configuration du graphique</h3>
+
+                    <div class="control-group">
+                        <label for="chartType">Type de représentation</label>
+                        <select id="chartType">
+                            <option value="bar-horizontal">Barres horizontales</option>
+                            <option value="bar-vertical">Barres verticales</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="showPercentages" checked>
+                            <span class="toggle-text">Afficher les pourcentages</span>
+                        </label>
+                    </div>
+
+                    <div class="control-group toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="showCounts" checked>
+                            <span class="toggle-text">Afficher les effectifs</span>
+                        </label>
+                    </div>
+
+                    <div class="control-group toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="sortDescending">
+                            <span class="toggle-text">Trier par ordre décroissant</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Statistiques descriptives -->
+                <div class="stats-panel">
+                    <h3>Statistiques</h3>
+
+                    <!-- Stats Questionnaire 1 -->
+                    <div class="stats-sample" id="statsSurvey1">
+                        <h4 class="stats-sample-title sample-1-color">Questionnaire 1</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Répondants :</span>
+                                <span class="stat-value" id="statRespondents1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total réponses :</span>
+                                <span class="stat-value" id="statTotalResponses1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Modalité :</span>
+                                <span class="stat-value" id="statMode1">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Réponse dominante :</span>
+                                <span class="stat-value" id="statDominant1">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Questionnaire 2 (caché par défaut) -->
+                    <div class="stats-sample" id="statsSurvey2" style="display: none;">
+                        <h4 class="stats-sample-title sample-2-color">Questionnaire 2</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Répondants :</span>
+                                <span class="stat-value" id="statRespondents2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total réponses :</span>
+                                <span class="stat-value" id="statTotalResponses2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Modalité :</span>
+                                <span class="stat-value" id="statMode2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Réponse dominante :</span>
+                                <span class="stat-value" id="statDominant2">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Zone de visualisation -->
+            <main class="visualization-area">
+                <div class="single-viz-container" id="chartContainer">
+                    <h3 id="chartTitle">Diagramme en barres horizontales</h3>
+                    <svg id="surveyChart"></svg>
+                    <!-- Légende (visible uniquement en mode comparaison) -->
+                    <div class="chart-legend" id="chartLegend" style="display: none;">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #3A9484;"></span>
+                            <span class="legend-label">Questionnaire 1</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #D276CA;"></span>
+                            <span class="legend-label">Questionnaire 2</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Tooltip pour les interactions -->
+    <div id="tooltip" class="tooltip"></div>
+
+    <script src="js/surveyDataGenerator.js"></script>
+    <script src="js/surveyVisualizations.js"></script>
+    <script src="js/surveyApp.js"></script>
+</body>
+</html>
