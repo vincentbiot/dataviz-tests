@@ -102,10 +102,6 @@ class SurveyApp {
         });
 
         // Options de visualisation
-        document.getElementById('chartType').addEventListener('change', () => {
-            this.updateVisualization();
-        });
-
         document.getElementById('showPercentages').addEventListener('change', () => {
             this.updateVisualization();
         });
