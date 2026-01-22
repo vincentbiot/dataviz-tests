@@ -31,9 +31,9 @@
         <div class="main-layout">
             <!-- Panneau de contrôle -->
             <aside class="control-panel">
-                <!-- Questionnaire 1 -->
+                <!-- Échantillon 1 -->
                 <div class="sample-section" id="survey1Section">
-                    <h2>Questionnaire 1</h2>
+                    <h2>Échantillon 1</h2>
 
                     <div class="control-group">
                         <label for="numRespondents1">Nombre de répondants</label>
@@ -43,8 +43,16 @@
 
                     <div class="control-group">
                         <label for="numOptions1">Nombre de réponses possibles</label>
-                        <input type="range" id="numOptions1" min="2" max="10" value="4" step="1">
+                        <input type="range" id="numOptions1" min="2" max="20" value="4" step="1">
                         <span class="value-display" id="numOptionsValue1">4</span>
+                    </div>
+
+                    <!-- Configuration des libellés des options -->
+                    <div class="control-group">
+                        <label>Libellés des réponses <span class="label-hint">(optionnel)</span></label>
+                        <div id="optionLabelsContainer" class="option-labels-container">
+                            <!-- Champs générés dynamiquement -->
+                        </div>
                     </div>
 
                     <div class="control-group">
@@ -98,42 +106,24 @@
                     </div>
                 </div>
 
-                <!-- Bouton pour ajouter un questionnaire -->
+                <!-- Bouton pour ajouter un échantillon -->
                 <div class="add-sample-container" id="addSurveyContainer">
-                    <button id="addSurveyBtn" class="btn btn-add-sample">+ Ajouter un questionnaire</button>
+                    <button id="addSurveyBtn" class="btn btn-add-sample">+ Ajouter un échantillon</button>
                 </div>
 
-                <!-- Questionnaire 2 (caché par défaut) -->
+                <!-- Échantillon 2 (caché par défaut) -->
                 <div class="sample-section sample-section-2" id="survey2Section" style="display: none;">
                     <div class="sample-header">
-                        <h2>Questionnaire 2</h2>
-                        <button id="removeSurveyBtn" class="btn-remove-sample" title="Supprimer le questionnaire 2">×</button>
+                        <h2>Échantillon 2</h2>
+                        <button id="removeSurveyBtn" class="btn-remove-sample" title="Supprimer l'échantillon 2">×</button>
                     </div>
+
+                    <p class="sample-sync-info">Mêmes questions que l'échantillon 1</p>
 
                     <div class="control-group">
                         <label for="numRespondents2">Nombre de répondants</label>
                         <input type="range" id="numRespondents2" min="10" max="1000" value="100" step="10">
                         <span class="value-display" id="numRespondentsValue2">100</span>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="numOptions2">Nombre de réponses possibles</label>
-                        <input type="range" id="numOptions2" min="2" max="10" value="4" step="1">
-                        <span class="value-display" id="numOptionsValue2">4</span>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="responseMode2">Modalité de réponse</label>
-                        <select id="responseMode2">
-                            <option value="single">Réponse unique (1 choix par répondant)</option>
-                            <option value="multiple">Réponses multiples (plusieurs choix possibles)</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group" id="multipleParams2" style="display: none;">
-                        <label for="avgResponsesPerPerson2">Nombre moyen de réponses par répondant</label>
-                        <input type="range" id="avgResponsesPerPerson2" min="1" max="5" value="2" step="0.5">
-                        <span class="value-display" id="avgResponsesValue2">2</span>
                     </div>
 
                     <div class="control-group">
@@ -175,109 +165,114 @@
 
                 <div class="button-group">
                     <button id="generateBtn" class="btn btn-primary">Générer les données</button>
-                    <button id="exportBtn" class="btn btn-secondary">Exporter le graphique</button>
                 </div>
 
-                <!-- Configurateur de visualisation -->
-                <div class="viz-config-panel">
-                    <h3>Configuration du graphique</h3>
-
-                    <div class="control-group">
-                        <label for="chartType">Type de représentation</label>
-                        <select id="chartType">
-                            <option value="bar-horizontal">Barres horizontales</option>
-                            <option value="bar-vertical">Barres verticales</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group toggle-group">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="showPercentages" checked>
-                            <span class="toggle-text">Afficher les pourcentages</span>
-                        </label>
-                    </div>
-
-                    <div class="control-group toggle-group">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="showCounts" checked>
-                            <span class="toggle-text">Afficher les effectifs</span>
-                        </label>
-                    </div>
-
-                    <div class="control-group toggle-group">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="sortDescending">
-                            <span class="toggle-text">Trier par ordre décroissant</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Statistiques descriptives -->
-                <div class="stats-panel">
-                    <h3>Statistiques</h3>
-
-                    <!-- Stats Questionnaire 1 -->
-                    <div class="stats-sample" id="statsSurvey1">
-                        <h4 class="stats-sample-title sample-1-color">Questionnaire 1</h4>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span class="stat-label">Répondants :</span>
-                                <span class="stat-value" id="statRespondents1">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total réponses :</span>
-                                <span class="stat-value" id="statTotalResponses1">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Modalité :</span>
-                                <span class="stat-value" id="statMode1">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Réponse dominante :</span>
-                                <span class="stat-value" id="statDominant1">-</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stats Questionnaire 2 (caché par défaut) -->
-                    <div class="stats-sample" id="statsSurvey2" style="display: none;">
-                        <h4 class="stats-sample-title sample-2-color">Questionnaire 2</h4>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span class="stat-label">Répondants :</span>
-                                <span class="stat-value" id="statRespondents2">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total réponses :</span>
-                                <span class="stat-value" id="statTotalResponses2">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Modalité :</span>
-                                <span class="stat-value" id="statMode2">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Réponse dominante :</span>
-                                <span class="stat-value" id="statDominant2">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </aside>
 
             <!-- Zone de visualisation -->
             <main class="visualization-area">
+                <!-- Configuration du graphique (au-dessus) -->
+                <div class="viz-config-panel viz-config-horizontal">
+                    <div class="config-row">
+                        <div class="config-item">
+                            <label for="labelDisplayMode">Affichage des libellés</label>
+                            <select id="labelDisplayMode">
+                                <option value="truncate">Tronquer (avec tooltip)</option>
+                                <option value="multiline">Multi-lignes</option>
+                                <option value="above">Au-dessus de la barre</option>
+                            </select>
+                        </div>
+
+                        <div class="config-item config-toggles">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="showPercentages" checked>
+                                <span class="toggle-text">Pourcentages</span>
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="showCounts" checked>
+                                <span class="toggle-text">Effectifs</span>
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="sortDescending">
+                                <span class="toggle-text">Trier décroissant</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Type de graphique caché (toujours horizontal) -->
+                <input type="hidden" id="chartType" value="bar-horizontal">
+
                 <div class="single-viz-container" id="chartContainer">
+                    <button id="exportBtn" class="btn-export-graph" title="Exporter le graphique en SVG">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
                     <h3 id="chartTitle">Diagramme en barres horizontales</h3>
                     <svg id="surveyChart"></svg>
                     <!-- Légende (visible uniquement en mode comparaison) -->
                     <div class="chart-legend" id="chartLegend" style="display: none;">
                         <div class="legend-item">
                             <span class="legend-color" style="background: #3A9484;"></span>
-                            <span class="legend-label">Questionnaire 1</span>
+                            <span class="legend-label">Échantillon 1</span>
                         </div>
                         <div class="legend-item">
                             <span class="legend-color" style="background: #D276CA;"></span>
-                            <span class="legend-label">Questionnaire 2</span>
+                            <span class="legend-label">Échantillon 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques (en dessous du graphique) -->
+                <div class="stats-panel stats-panel-horizontal">
+                    <div class="stats-row">
+                        <!-- Stats Échantillon 1 -->
+                        <div class="stats-sample" id="statsSurvey1">
+                            <h4 class="stats-sample-title sample-1-color">Échantillon 1</h4>
+                            <div class="stats-grid-horizontal">
+                                <div class="stat-item">
+                                    <span class="stat-label">Répondants :</span>
+                                    <span class="stat-value" id="statRespondents1">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total réponses :</span>
+                                    <span class="stat-value" id="statTotalResponses1">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Modalité :</span>
+                                    <span class="stat-value" id="statMode1">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Réponse dominante :</span>
+                                    <span class="stat-value" id="statDominant1">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Échantillon 2 (caché par défaut) -->
+                        <div class="stats-sample" id="statsSurvey2" style="display: none;">
+                            <h4 class="stats-sample-title sample-2-color">Échantillon 2</h4>
+                            <div class="stats-grid-horizontal">
+                                <div class="stat-item">
+                                    <span class="stat-label">Répondants :</span>
+                                    <span class="stat-value" id="statRespondents2">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total réponses :</span>
+                                    <span class="stat-value" id="statTotalResponses2">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Modalité :</span>
+                                    <span class="stat-value" id="statMode2">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Réponse dominante :</span>
+                                    <span class="stat-value" id="statDominant2">-</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

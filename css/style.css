@@ -142,7 +142,6 @@ header h1 {
     background: var(--color-bluegrey-100);
     padding: 30px;
     border-right: 1px solid #dee2e6;
-    max-height: calc(100vh - 180px);
     overflow-y: auto;
 }
 
@@ -306,6 +305,16 @@ header h1 {
     color: var(--graph-sample2);
 }
 
+.sample-sync-info {
+    font-size: 13px;
+    color: #6c757d;
+    font-style: italic;
+    margin: -5px 0 15px 0;
+    padding: 8px 12px;
+    background: rgba(210, 118, 202, 0.1);
+    border-radius: 4px;
+}
+
 .sample-header {
     display: flex;
     justify-content: space-between;
@@ -390,8 +399,9 @@ header h1 {
     padding: 30px;
     background: white;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 500px;
 }
 
@@ -402,6 +412,7 @@ header h1 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     max-width: 800px;
     width: 100%;
+    position: relative;
 }
 
 .single-viz-container h3 {
@@ -415,6 +426,39 @@ header h1 {
 .single-viz-container svg {
     display: block;
     margin: 0 auto;
+}
+
+/* Bouton d'export dans le graphique */
+.btn-export-graph {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 8px;
+    cursor: pointer;
+    color: #536779;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.btn-export-graph:hover {
+    opacity: 1;
+    background: var(--btn-primary-bg);
+    color: white;
+    border-color: var(--btn-primary-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(28, 126, 109, 0.3);
+}
+
+.btn-export-graph svg {
+    display: block;
+    margin: 0;
 }
 
 /* Légende du graphique */
@@ -458,6 +502,65 @@ header h1 {
     font-size: 1.1em;
     margin-bottom: 15px;
     color: var(--btn-primary-bg);
+}
+
+/* Configuration horizontale au-dessus du graphique */
+.viz-config-horizontal {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    width: 100%;
+    max-width: 800px;
+    box-sizing: border-box;
+}
+
+.viz-config-horizontal .config-row {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.viz-config-horizontal .config-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.viz-config-horizontal .config-item label:not(.toggle-label) {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap;
+}
+
+.viz-config-horizontal .config-item select {
+    padding: 6px 10px;
+    font-size: 0.9em;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+}
+
+.viz-config-horizontal .config-toggles {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.viz-config-horizontal .toggle-label {
+    font-size: 0.85em;
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.viz-config-horizontal .toggle-label:hover {
+    background: #e9ecef;
+}
+
+.viz-config-horizontal .toggle-text {
+    font-size: 0.9em;
 }
 
 .toggle-group {
@@ -667,6 +770,54 @@ header h1 {
     font-size: 0.9em;
 }
 
+/* Libellés des options */
+.option-labels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 5px 0;
+}
+
+.option-label-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-label-letter {
+    font-weight: 600;
+    color: var(--btn-primary-bg);
+    min-width: 20px;
+    font-size: 0.9em;
+}
+
+.option-label-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.option-label-input:focus {
+    outline: none;
+    border-color: var(--btn-primary-bg);
+    box-shadow: 0 0 0 2px rgba(58, 148, 132, 0.1);
+}
+
+.option-label-input::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+.label-hint {
+    font-weight: 400;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
 /* Configuration manuelle */
 .manual-config {
     margin-top: 15px;
@@ -716,6 +867,14 @@ header h1 {
     color: var(--btn-primary-bg);
     min-width: 40px;
     text-align: right;
+}
+
+.response-slider-label .slider-label-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
 }
 
 .response-slider-item input[type="range"] {
@@ -773,6 +932,91 @@ header h1 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Panneau de statistiques horizontal (sous le graphique) */
+.stats-panel-horizontal {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    width: 100%;
+    max-width: 800px;
+    box-sizing: border-box;
+}
+
+.stats-panel-horizontal .stats-row {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stats-panel-horizontal .stats-sample {
+    width: 100%;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.stats-panel-horizontal .stats-sample-title {
+    font-size: 0.95em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid currentColor;
+}
+
+.stats-grid-horizontal {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px 16px;
+}
+
+.stats-grid-horizontal .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+/* Responsive pour les statistiques */
+@media (max-width: 900px) {
+    .stats-grid-horizontal {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 650px) {
+    .stats-grid-horizontal {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 400px) {
+    .stats-grid-horizontal {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stats-grid-horizontal .stat-label {
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap;
+}
+
+.stats-grid-horizontal .stat-value {
+    font-weight: 700;
+    color: var(--btn-primary-bg);
+    white-space: nowrap;
+}
+
+/* Couleur spécifique pour l'échantillon 2 */
+#statsSample2 .stat-value {
+    color: var(--graph-sample2);
 }
 
 /* Responsive pour navigation */
