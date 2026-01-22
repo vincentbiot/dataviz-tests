@@ -101,7 +101,7 @@ class Visualizations {
     }
 
     // Méthode principale pour dessiner
-    draw(samples, chartType, showDataPoints) {
+    draw(samples, chartType, showDataPoints = false, establishment = null) {
         this.clear();
         this.initTooltip();
 
@@ -109,16 +109,16 @@ class Visualizations {
 
         switch (chartType) {
             case 'boxplot':
-                this.drawBoxPlot(samples, showDataPoints, isComparison);
+                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment);
                 break;
             case 'violinplot':
-                this.drawViolinPlot(samples, showDataPoints, isComparison);
+                this.drawViolinPlot(samples, showDataPoints, isComparison, establishment);
                 break;
             case 'density':
-                this.drawDensityPlot(samples, showDataPoints, isComparison);
+                this.drawDensityPlot(samples, showDataPoints, isComparison, establishment);
                 break;
             default:
-                this.drawBoxPlot(samples, showDataPoints, isComparison);
+                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment);
         }
     }
 
@@ -154,8 +154,56 @@ class Visualizations {
         };
     }
 
+    // Dessiner la ligne de référence de l'établissement
+    drawEstablishmentLine(g, y, establishment) {
+        if (!establishment || establishment.value === null) {
+            return; // Pas de ligne si pas de valeur
+        }
+
+        const yPos = y(establishment.value);
+
+        // Vérifier que la valeur est dans le domaine
+        const [yMin, yMax] = y.domain();
+        if (establishment.value < yMin || establishment.value > yMax) {
+            console.warn(`Établissement value ${establishment.value} is outside range [${yMin}, ${yMax}]`);
+            return; // Ne pas afficher si hors limites
+        }
+
+        // Ligne horizontale en pointillés
+        g.append('line')
+            .attr('class', 'establishment-line')
+            .attr('x1', 0)
+            .attr('x2', this.innerWidth)
+            .attr('y1', yPos)
+            .attr('y2', yPos)
+            .attr('stroke', '#233546') // Couleur text-title du design kit
+            .attr('stroke-width', 2)
+            .attr('stroke-dasharray', '8,4')
+            .attr('opacity', 0.8);
+
+        // Label avec le nom de l'établissement
+        g.append('text')
+            .attr('class', 'establishment-label')
+            .attr('x', this.innerWidth - 5)
+            .attr('y', yPos - 6)
+            .attr('text-anchor', 'end')
+            .attr('font-size', '12px')
+            .attr('font-weight', '600')
+            .attr('fill', '#233546')
+            .text(`${establishment.name}: ${establishment.value.toFixed(2)}`);
+
+        // Petit marqueur circulaire sur l'axe Y
+        g.append('circle')
+            .attr('class', 'establishment-marker')
+            .attr('cx', -10)
+            .attr('cy', yPos)
+            .attr('r', 4)
+            .attr('fill', '#233546')
+            .attr('opacity', 0.8);
+    }
+
     // Box Plot
-    drawBoxPlot(samples, showDataPoints, isComparison) {
+    drawBoxPlot(samples, showDataPoints, isComparison, establishment = null) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -341,6 +389,9 @@ class Visualizations {
         // Axe Y
         g.append('g').call(d3.axisLeft(y).ticks(8));
 
+        // Dessiner la ligne d'établissement
+        this.drawEstablishmentLine(g, y, establishment);
+
         // Label Y
         g.append('text')
             .attr('transform', 'rotate(-90)')
@@ -352,7 +403,7 @@ class Visualizations {
     }
 
     // Violin Plot
-    drawViolinPlot(samples, showDataPoints, isComparison) {
+    drawViolinPlot(samples, showDataPoints, isComparison, establishment = null) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -514,6 +565,9 @@ class Visualizations {
         // Axe Y
         g.append('g').call(d3.axisLeft(y).ticks(8));
 
+        // Dessiner la ligne d'établissement
+        this.drawEstablishmentLine(g, y, establishment);
+
         // Label Y
         g.append('text')
             .attr('transform', 'rotate(-90)')
@@ -525,7 +579,7 @@ class Visualizations {
     }
 
     // Density Plot
-    drawDensityPlot(samples, showDataPoints, isComparison) {
+    drawDensityPlot(samples, showDataPoints, isComparison, establishment = null) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -677,6 +731,9 @@ class Visualizations {
 
         // Axe Y
         g.append('g').call(d3.axisLeft(y).ticks(8));
+
+        // Dessiner la ligne d'établissement
+        this.drawEstablishmentLine(g, y, establishment);
 
         // Label Y
         g.append('text')

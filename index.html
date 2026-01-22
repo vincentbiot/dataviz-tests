@@ -11,6 +11,17 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+    <!-- Navigation -->
+    <nav class="main-navigation">
+        <div class="nav-container">
+            <h1 class="nav-logo">DataViz Tests</h1>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link active">Distributions Statistiques</a></li>
+                <li><a href="survey.html" class="nav-link">Réponses Questionnaires</a></li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="container">
         <header>
             <h1>Visualisation de distributions numériques</h1>
@@ -143,6 +154,19 @@
                             <input type="checkbox" id="showDataPoints" checked>
                             <span class="toggle-text">Afficher les data points</span>
                         </label>
+                    </div>
+                </div>
+
+                <!-- Établissement de référence -->
+                <div class="viz-config-panel" style="margin-top: 15px;">
+                    <h3>Établissement</h3>
+                    <div class="control-group">
+                        <label for="establishmentName">Nom de l'établissement</label>
+                        <input type="text" id="establishmentName" placeholder="Ex: EHPAD de l'océan" value="">
+                    </div>
+                    <div class="control-group">
+                        <label for="establishmentValue">Score</label>
+                        <input type="number" id="establishmentValue" step="0.1" placeholder="Valeur de référence">
                     </div>
                 </div>
 
