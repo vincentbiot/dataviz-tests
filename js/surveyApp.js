@@ -12,8 +12,9 @@ class SurveyApp {
         this.currentStats1 = null;
         this.currentStats2 = null;
 
-        // Visualisations
-        this.visualizations = new SurveyVisualizations('#surveyChart', 700, 400);
+        // Visualisations - hauteur de base, sera ajustée dynamiquement
+        this.baseHeight = 400;
+        this.visualizations = new SurveyVisualizations('#surveyChart', 700, this.baseHeight);
 
         // Mapping des titres de graphiques
         this.chartTitles = {
@@ -24,15 +25,23 @@ class SurveyApp {
         // Initialisation
         this.initEventListeners();
         this.updateGenerationModeVisibility(1);
+        this.updateOptionLabels(); // Générer les champs de libellés initiaux
     }
 
     /**
      * Initialise tous les event listeners
      */
     initEventListeners() {
-        // Questionnaire 1 - Sliders avec affichage de valeur
+        // Échantillon 1 - Sliders avec affichage de valeur
         this.initSlider('numRespondents1', 'numRespondentsValue1', null);
-        this.initSlider('numOptions1', 'numOptionsValue1', () => this.updateResponseSliders(1));
+        this.initSlider('numOptions1', 'numOptionsValue1', () => {
+            this.updateOptionLabels();
+            this.updateResponseSliders(1);
+            // Mettre à jour aussi les sliders de l'échantillon 2 si en mode comparaison
+            if (this.comparisonMode) {
+                this.updateResponseSliders(2);
+            }
+        });
 
         // Mode de réponse
         document.getElementById('responseMode1').addEventListener('change', (e) => {
@@ -55,29 +64,14 @@ class SurveyApp {
             this.updateResponseSliders(1);
         });
 
-        // Questionnaire 2 - Sliders avec affichage de valeur
+        // Échantillon 2 - Seulement nombre de répondants (les autres params viennent de l'échantillon 1)
         this.initSlider('numRespondents2', 'numRespondentsValue2', null);
-        this.initSlider('numOptions2', 'numOptionsValue2', () => this.updateResponseSliders(2));
 
-        // Mode de réponse
-        document.getElementById('responseMode2').addEventListener('change', (e) => {
-            this.toggleMultipleParams(2, e.target.value === 'multiple');
-        });
-
-        document.getElementById('avgResponsesPerPerson2')?.addEventListener('input', (e) => {
-            document.getElementById('avgResponsesValue2').textContent = e.target.value;
-        });
-
-        // Mode de génération
+        // Mode de génération pour échantillon 2
         document.querySelectorAll('input[name="generationMode2"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
+            radio.addEventListener('change', () => {
                 this.updateGenerationModeVisibility(2);
             });
-        });
-
-        // Nombre d'options change => régénérer les sliders
-        document.getElementById('numOptions2').addEventListener('change', () => {
-            this.updateResponseSliders(2);
         });
 
         // Upload de fichiers
@@ -121,6 +115,10 @@ class SurveyApp {
         });
 
         document.getElementById('sortDescending').addEventListener('change', () => {
+            this.updateVisualization();
+        });
+
+        document.getElementById('labelDisplayMode').addEventListener('change', () => {
             this.updateVisualization();
         });
     }
@@ -170,18 +168,22 @@ class SurveyApp {
      * Met à jour les sliders de configuration manuelle
      */
     updateResponseSliders(questionnaireNum) {
-        const numOptions = parseInt(document.getElementById(`numOptions${questionnaireNum}`).value);
+        // Toujours utiliser numOptions de l'échantillon 1
+        const numOptions = parseInt(document.getElementById('numOptions1').value);
         const numRespondents = parseInt(document.getElementById(`numRespondents${questionnaireNum}`).value);
         const container = document.getElementById(`responseSliders${questionnaireNum}`);
 
         if (!container) return;
+
+        // Récupérer les libellés depuis l'échantillon 1
+        const optionLabels = this.getOptionLabels();
 
         // Effacer les sliders existants
         container.innerHTML = '';
 
         // Créer les sliders
         for (let i = 0; i < numOptions; i++) {
-            const label = `Réponse ${String.fromCharCode(65 + i)}`;
+            const label = optionLabels[i] || String.fromCharCode(65 + i);
             const sliderId = `responseSlider${questionnaireNum}_${i}`;
             const valueId = `responseValue${questionnaireNum}_${i}`;
 
@@ -190,7 +192,7 @@ class SurveyApp {
 
             sliderItem.innerHTML = `
                 <div class="response-slider-label">
-                    <input type="text" value="${label}" id="responseLabel${questionnaireNum}_${i}" />
+                    <span class="slider-label-text">${label}</span>
                     <span class="slider-value" id="${valueId}">0</span>
                 </div>
                 <input type="range" id="${sliderId}" min="0" max="${numRespondents * 2}" value="0" step="1" />
@@ -214,7 +216,8 @@ class SurveyApp {
      * Met à jour l'affichage du total des réponses
      */
     updateTotalDisplay(questionnaireNum) {
-        const numOptions = parseInt(document.getElementById(`numOptions${questionnaireNum}`).value);
+        // Toujours utiliser numOptions de l'échantillon 1
+        const numOptions = parseInt(document.getElementById('numOptions1').value);
         const numRespondents = parseInt(document.getElementById(`numRespondents${questionnaireNum}`).value);
 
         let total = 0;
@@ -231,8 +234,8 @@ class SurveyApp {
         if (totalDisplay) {
             totalDisplay.textContent = total;
 
-            // Colorer en rouge si invalide
-            const responseMode = document.getElementById(`responseMode${questionnaireNum}`).value;
+            // Colorer en rouge si invalide (utiliser responseMode de l'échantillon 1)
+            const responseMode = document.getElementById('responseMode1').value;
             if (responseMode === 'single' && total !== numRespondents) {
                 totalDisplay.style.color = '#e74c3c';
             } else if (responseMode === 'multiple' && total < numRespondents) {
@@ -291,9 +294,22 @@ class SurveyApp {
         const labels = Object.keys(data);
         const values = Object.values(data);
 
-        // Mettre à jour le nombre d'options
-        document.getElementById(`numOptions${questionnaireNum}`).value = labels.length;
-        document.getElementById(`numOptionsValue${questionnaireNum}`).textContent = labels.length;
+        // Pour l'échantillon 1 : mettre à jour les options et libellés
+        if (questionnaireNum === 1) {
+            // Mettre à jour le nombre d'options
+            document.getElementById('numOptions1').value = labels.length;
+            document.getElementById('numOptionsValue1').textContent = labels.length;
+
+            // Mettre à jour les champs de libellés
+            this.updateOptionLabels();
+
+            setTimeout(() => {
+                labels.forEach((label, index) => {
+                    const labelInput = document.getElementById(`optionLabel1_${index}`);
+                    if (labelInput) labelInput.value = label;
+                });
+            }, 50);
+        }
 
         // Passer en mode manuel
         const manualRadio = document.querySelector(`input[name="generationMode${questionnaireNum}"][value="manual"]`);
@@ -306,11 +322,9 @@ class SurveyApp {
         setTimeout(() => {
             // Remplir les sliders avec les valeurs
             labels.forEach((label, index) => {
-                const labelInput = document.getElementById(`responseLabel${questionnaireNum}_${index}`);
                 const slider = document.getElementById(`responseSlider${questionnaireNum}_${index}`);
                 const valueDisplay = document.getElementById(`responseValue${questionnaireNum}_${index}`);
 
-                if (labelInput) labelInput.value = label;
                 if (slider) slider.value = values[index];
                 if (valueDisplay) valueDisplay.textContent = values[index];
             });
@@ -335,6 +349,9 @@ class SurveyApp {
             addSurveyContainer.style.display = 'none';
             statsSurvey2.style.display = 'block';
             chartLegend.style.display = 'flex';
+
+            // Initialiser les sliders de l'échantillon 2 avec les mêmes labels que l'échantillon 1
+            this.updateGenerationModeVisibility(2);
         } else {
             survey2Section.style.display = 'none';
             addSurveyContainer.style.display = 'block';
@@ -384,11 +401,14 @@ class SurveyApp {
 
     /**
      * Récupère les paramètres d'un questionnaire
+     * L'échantillon 2 utilise les mêmes questions/options que l'échantillon 1
      */
     getQuestionnaireParams(questionnaireNum) {
         const numRespondents = parseInt(document.getElementById(`numRespondents${questionnaireNum}`).value);
-        const numOptions = parseInt(document.getElementById(`numOptions${questionnaireNum}`).value);
-        const responseMode = document.getElementById(`responseMode${questionnaireNum}`).value;
+
+        // L'échantillon 2 utilise les mêmes paramètres de questions que l'échantillon 1
+        const numOptions = parseInt(document.getElementById('numOptions1').value);
+        const responseMode = document.getElementById('responseMode1').value;
         const generationMode = document.querySelector(`input[name="generationMode${questionnaireNum}"]:checked`)?.value || 'auto';
 
         const params = {
@@ -398,28 +418,28 @@ class SurveyApp {
             generationMode
         };
 
-        // Paramètres spécifiques au mode multiple
+        // Paramètres spécifiques au mode multiple (toujours depuis échantillon 1)
         if (responseMode === 'multiple') {
-            const avgResponsesInput = document.getElementById(`avgResponsesPerPerson${questionnaireNum}`);
+            const avgResponsesInput = document.getElementById('avgResponsesPerPerson1');
             if (avgResponsesInput) {
                 params.avgResponsesPerPerson = parseFloat(avgResponsesInput.value);
             }
         }
 
+        // Récupérer les libellés depuis l'échantillon 1
+        const optionLabels = this.getOptionLabels();
+        if (optionLabels.length > 0) {
+            params.optionLabels = optionLabels;
+        }
+
         // Paramètres spécifiques au mode manuel
         if (generationMode === 'manual') {
             const manualValues = [];
-            const optionLabels = [];
 
             for (let i = 0; i < numOptions; i++) {
                 const slider = document.getElementById(`responseSlider${questionnaireNum}_${i}`);
-                const labelInput = document.getElementById(`responseLabel${questionnaireNum}_${i}`);
-
                 if (slider) {
                     manualValues.push(parseInt(slider.value));
-                }
-                if (labelInput) {
-                    optionLabels.push(labelInput.value);
                 }
             }
 
@@ -430,10 +450,82 @@ class SurveyApp {
             }
 
             params.manualValues = manualValues;
-            params.optionLabels = optionLabels;
         }
 
         return params;
+    }
+
+    /**
+     * Récupère les libellés des options depuis l'échantillon 1
+     */
+    getOptionLabels() {
+        const numOptions = parseInt(document.getElementById('numOptions1').value);
+        const labels = [];
+
+        for (let i = 0; i < numOptions; i++) {
+            const labelInput = document.getElementById(`optionLabel1_${i}`);
+            if (labelInput && labelInput.value.trim()) {
+                labels.push(labelInput.value.trim());
+            } else {
+                labels.push(String.fromCharCode(65 + i)); // A, B, C...
+            }
+        }
+
+        return labels;
+    }
+
+    /**
+     * Met à jour les champs de libellés des options
+     */
+    updateOptionLabels() {
+        const numOptions = parseInt(document.getElementById('numOptions1').value);
+        const container = document.getElementById('optionLabelsContainer');
+
+        if (!container) return;
+
+        // Sauvegarder les valeurs existantes
+        const existingValues = [];
+        for (let i = 0; i < 20; i++) {
+            const input = document.getElementById(`optionLabel1_${i}`);
+            if (input) {
+                existingValues[i] = input.value;
+            }
+        }
+
+        // Effacer et régénérer
+        container.innerHTML = '';
+
+        for (let i = 0; i < numOptions; i++) {
+            const letter = String.fromCharCode(65 + i);
+            const item = document.createElement('div');
+            item.className = 'option-label-item';
+
+            item.innerHTML = `
+                <span class="option-label-letter">${letter}</span>
+                <input type="text"
+                       id="optionLabel1_${i}"
+                       class="option-label-input"
+                       placeholder="Réponse ${letter}"
+                       value="${existingValues[i] || ''}">
+            `;
+
+            container.appendChild(item);
+        }
+    }
+
+    /**
+     * Ajuste la hauteur du SVG selon le nombre d'options (pour barres horizontales)
+     */
+    adjustChartHeight(numOptions, chartType) {
+        let height = this.baseHeight;
+
+        // Pour les barres horizontales, augmenter la hauteur si beaucoup d'options
+        if (chartType === 'bar-horizontal' && numOptions > 10) {
+            height = Math.max(this.baseHeight, numOptions * 35);
+        }
+
+        this.visualizations.height = height;
+        this.visualizations.innerHeight = height - this.visualizations.margin.top - this.visualizations.margin.bottom;
     }
 
     /**
@@ -448,6 +540,7 @@ class SurveyApp {
         const showPercentages = document.getElementById('showPercentages').checked;
         const showCounts = document.getElementById('showCounts').checked;
         const sortDescending = document.getElementById('sortDescending').checked;
+        const labelDisplayMode = document.getElementById('labelDisplayMode').value;
 
         // Préparer les échantillons
         const samples = [];
@@ -455,7 +548,7 @@ class SurveyApp {
         const data1Array = this.dataGenerator1.getDataArray(sortDescending);
         samples.push({
             data: data1Array,
-            name: 'Questionnaire 1',
+            name: 'Échantillon 1',
             color: '#3A9484'
         });
 
@@ -463,16 +556,21 @@ class SurveyApp {
             const data2Array = this.dataGenerator2.getDataArray(sortDescending);
             samples.push({
                 data: data2Array,
-                name: 'Questionnaire 2',
+                name: 'Échantillon 2',
                 color: '#D276CA'
             });
         }
+
+        // Ajuster la hauteur selon le nombre d'options
+        const numOptions = data1Array.length;
+        this.adjustChartHeight(numOptions, chartType);
 
         // Dessiner
         this.visualizations.draw(samples, chartType, {
             showPercentages,
             showCounts,
-            sortDescending
+            sortDescending,
+            labelDisplayMode
         });
 
         // Mettre à jour le titre
