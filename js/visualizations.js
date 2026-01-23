@@ -101,7 +101,7 @@ class Visualizations {
     }
 
     // Méthode principale pour dessiner
-    draw(samples, chartType, showDataPoints = false, establishment = null) {
+    draw(samples, chartType, showDataPoints = false, establishment = null, showOutliers = true) {
         this.clear();
         this.initTooltip();
 
@@ -109,29 +109,37 @@ class Visualizations {
 
         switch (chartType) {
             case 'boxplot':
-                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment);
+                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment, showOutliers);
                 break;
             case 'violinplot':
-                this.drawViolinPlot(samples, showDataPoints, isComparison, establishment);
+                this.drawViolinPlot(samples, showDataPoints, isComparison, establishment, showOutliers);
                 break;
             case 'density':
-                this.drawDensityPlot(samples, showDataPoints, isComparison, establishment);
+                this.drawDensityPlot(samples, showDataPoints, isComparison, establishment, showOutliers);
                 break;
             default:
-                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment);
+                this.drawBoxPlot(samples, showDataPoints, isComparison, establishment, showOutliers);
         }
     }
 
     // Calculer l'échelle Y commune pour tous les échantillons
-    getCommonYScale(samples) {
+    getCommonYScale(samples, showOutliers = true) {
         let allMin = Infinity;
         let allMax = -Infinity;
 
         samples.forEach(sample => {
-            const min = d3.min(sample.data);
-            const max = d3.max(sample.data);
-            if (min < allMin) allMin = min;
-            if (max > allMax) allMax = max;
+            if (showOutliers) {
+                // Inclure tous les points
+                const min = d3.min(sample.data);
+                const max = d3.max(sample.data);
+                if (min < allMin) allMin = min;
+                if (max > allMax) allMax = max;
+            } else {
+                // Exclure les outliers - utiliser les bornes IQR
+                const bounds = this.getOutlierBounds(sample.data);
+                if (bounds.min < allMin) allMin = bounds.min;
+                if (bounds.max > allMax) allMax = bounds.max;
+            }
         });
 
         return d3.scaleLinear()
@@ -203,7 +211,7 @@ class Visualizations {
     }
 
     // Box Plot
-    drawBoxPlot(samples, showDataPoints, isComparison, establishment = null) {
+    drawBoxPlot(samples, showDataPoints, isComparison, establishment = null, showOutliers = true) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -211,7 +219,7 @@ class Visualizations {
         const g = svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-        const y = this.getCommonYScale(samples);
+        const y = this.getCommonYScale(samples, showOutliers);
         const self = this;
 
         // Définir les positions des box plots
@@ -249,7 +257,7 @@ class Visualizations {
                     (idx === 0 ? pointsRightBoundary : this.innerWidth * 0.68) :
                     pointsRightBoundary;
 
-                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name, showOutliers);
             });
 
             // Ligne de séparation
@@ -331,8 +339,8 @@ class Visualizations {
                     .attr('stroke-width', 1);
             });
 
-            // Outliers (si data points désactivés)
-            if (!showDataPoints) {
+            // Outliers (si data points désactivés et showOutliers activé)
+            if (!showDataPoints && showOutliers) {
                 const outlierData = [];
                 sample.data.forEach((value, index) => {
                     if (value < bounds.min || value > bounds.max) {
@@ -340,7 +348,7 @@ class Visualizations {
                     }
                 });
 
-                const MAX_OUTLIERS = 500;
+                const MAX_OUTLIERS = Infinity; // Pas de limite - afficher tous les outliers
                 let displayOutlierData = outlierData;
                 if (outlierData.length > MAX_OUTLIERS) {
                     const indices = d3.shuffle(d3.range(outlierData.length)).slice(0, MAX_OUTLIERS);
@@ -403,7 +411,7 @@ class Visualizations {
     }
 
     // Violin Plot
-    drawViolinPlot(samples, showDataPoints, isComparison, establishment = null) {
+    drawViolinPlot(samples, showDataPoints, isComparison, establishment = null, showOutliers = true) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -411,7 +419,7 @@ class Visualizations {
         const g = svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-        const y = this.getCommonYScale(samples);
+        const y = this.getCommonYScale(samples, showOutliers);
         const self = this;
 
         // Définir les positions des violins
@@ -444,7 +452,7 @@ class Visualizations {
                 const rightBound = isComparison ?
                     (idx === 0 ? this.innerWidth * 0.18 : this.innerWidth * 0.68) : this.innerWidth * 0.35;
 
-                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name, showOutliers);
             });
 
             // Lignes de séparation
@@ -579,7 +587,7 @@ class Visualizations {
     }
 
     // Density Plot
-    drawDensityPlot(samples, showDataPoints, isComparison, establishment = null) {
+    drawDensityPlot(samples, showDataPoints, isComparison, establishment = null, showOutliers = true) {
         const svg = d3.select('#mainChart')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -587,7 +595,7 @@ class Visualizations {
         const g = svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-        const y = this.getCommonYScale(samples);
+        const y = this.getCommonYScale(samples, showOutliers);
         const self = this;
 
         // Définir les positions des density plots
@@ -620,7 +628,7 @@ class Visualizations {
                 const rightBound = isComparison ?
                     (idx === 0 ? this.innerWidth * 0.16 : this.innerWidth * 0.64) : this.innerWidth * 0.35;
 
-                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name);
+                this.drawDataPoints(g, sample.data, y, leftBound, rightBound, outlierIndices, sample.color, sample.name, showOutliers);
             });
 
             // Lignes de séparation
@@ -746,24 +754,30 @@ class Visualizations {
     }
 
     // Dessiner les data points
-    drawDataPoints(g, data, y, leftBoundary, rightBoundary, outlierIndices, color, sampleName) {
-        const MAX_VISUAL_POINTS = 2000;
+    drawDataPoints(g, data, y, leftBoundary, rightBoundary, outlierIndices, color, sampleName, showOutliers = true) {
+        const MAX_VISUAL_POINTS = Infinity; // Pas de limite - afficher tous les points
         const totalPoints = data.length;
         const enableHoverForAll = totalPoints < MAX_VISUAL_POINTS;
 
-        const indexedData = data.map((value, index) => ({ value, index }));
+        let indexedData = data.map((value, index) => ({ value, index }));
+
+        // Si showOutliers est false, filtrer les outliers
+        if (!showOutliers) {
+            indexedData = indexedData.filter(d => !outlierIndices.has(d.index));
+        }
 
         let displayData = indexedData;
         let isSampled = false;
 
-        if (totalPoints > MAX_VISUAL_POINTS) {
-            const indices = d3.shuffle(d3.range(totalPoints)).slice(0, MAX_VISUAL_POINTS);
+        if (indexedData.length > MAX_VISUAL_POINTS) {
+            const indices = d3.shuffle(d3.range(indexedData.length)).slice(0, MAX_VISUAL_POINTS);
             displayData = indices.map(i => indexedData[i]);
             isSampled = true;
         }
 
-        const pointRadius = totalPoints > 5000 ? 1.5 : (totalPoints > 2000 ? 2 : 2.5);
-        const pointOpacity = totalPoints > 5000 ? 0.3 : (totalPoints > 2000 ? 0.4 : 0.5);
+        const displayCount = indexedData.length;
+        const pointRadius = displayCount > 5000 ? 1.5 : (displayCount > 2000 ? 2 : 2.5);
+        const pointOpacity = displayCount > 5000 ? 0.3 : (displayCount > 2000 ? 0.4 : 0.5);
         const jitterWidth = rightBoundary - leftBoundary - 10;
         const center = (leftBoundary + rightBoundary) / 2;
 
@@ -773,18 +787,18 @@ class Visualizations {
             .data(displayData)
             .join('circle')
             .attr('class', d => {
-                const isOutlier = outlierIndices.has(d.index);
+                const isOutlier = showOutliers && outlierIndices.has(d.index);
                 const isInteractive = enableHoverForAll || isOutlier;
                 return `datapoint datapoint-${sampleName.replace(/\s+/g, '')}${isInteractive ? ' interactive' : ''}${isOutlier ? ' outlier-point' : ''}`;
             })
             .attr('cx', () => center + (Math.random() - 0.5) * jitterWidth)
             .attr('cy', d => y(d.value))
             .attr('r', pointRadius)
-            .attr('fill', d => outlierIndices.has(d.index) ? '#DF6277' : color)
+            .attr('fill', d => (showOutliers && outlierIndices.has(d.index)) ? '#DF6277' : color)
             .attr('opacity', pointOpacity)
             .attr('stroke', 'none')
             .on('mouseenter', function(event, d) {
-                const isOutlier = outlierIndices.has(d.index);
+                const isOutlier = showOutliers && outlierIndices.has(d.index);
                 if (enableHoverForAll || isOutlier) {
                     d3.select(this)
                         .attr('r', pointRadius * 1.8)
@@ -793,13 +807,13 @@ class Visualizations {
                 }
             })
             .on('mousemove', function(event, d) {
-                const isOutlier = outlierIndices.has(d.index);
+                const isOutlier = showOutliers && outlierIndices.has(d.index);
                 if (enableHoverForAll || isOutlier) {
                     self.positionTooltip(event);
                 }
             })
-            .on('mouseleave', function(event, d) {
-                const isOutlier = outlierIndices.has(d.index);
+            .on('mouseleave', function(_event, d) {
+                const isOutlier = showOutliers && outlierIndices.has(d.index);
                 if (enableHoverForAll || isOutlier) {
                     d3.select(this)
                         .attr('r', pointRadius)
@@ -816,7 +830,7 @@ class Visualizations {
                 .attr('text-anchor', 'middle')
                 .style('font-size', '9px')
                 .style('fill', '#666')
-                .text(`(${MAX_VISUAL_POINTS}/${totalPoints})`);
+                .text(`(${MAX_VISUAL_POINTS}/${displayCount})`);
         }
     }
 

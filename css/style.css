@@ -1046,3 +1046,137 @@ header h1 {
         border-bottom-color: transparent;
     }
 }
+
+/* Styles pour la sélection de source de données */
+.data-source-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--btn-primary-bg);
+}
+
+.data-source-section label {
+    font-weight: 600;
+    color: var(--btn-primary-bg);
+}
+
+.data-source-section select {
+    background: white;
+    border: 2px solid var(--btn-primary-bg);
+    font-weight: 500;
+}
+
+/* Contrôles Axe1 */
+#axe1Controls {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 2px solid var(--btn-primary-bg);
+}
+
+#axe1Controls h3 {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: var(--btn-primary-bg);
+    font-weight: 600;
+}
+
+#axe1Controls .control-group {
+    margin-bottom: 15px;
+}
+
+#axe1Controls select {
+    background: white;
+}
+
+/* Indicateur de chargement */
+.loading-indicator {
+    text-align: center;
+    padding: 20px;
+    color: var(--btn-primary-bg);
+    font-style: italic;
+}
+
+.loading-indicator::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--btn-primary-bg);
+    border-top-color: transparent;
+    border-radius: 50%;
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Checkbox pour Axe1 */
+.checkbox-group {
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: var(--btn-primary-bg);
+}
+
+.checkbox-label span {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+/* Information sur les données */
+.data-info {
+    margin-top: 15px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    font-size: 0.85em;
+    color: #495057;
+    line-height: 1.5;
+}
+
+.data-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.data-info .info-row:last-child {
+    margin-bottom: 0;
+}
+
+.data-info .info-label {
+    color: #6c757d;
+}
+
+.data-info .info-value {
+    font-weight: 600;
+    color: var(--btn-primary-bg);
+}
+
+.data-info .info-warning {
+    color: #e67e22;
+    font-weight: 500;
+}
+
+.data-info .info-error {
+    color: #e74c3c;
+    font-weight: 600;
+}
