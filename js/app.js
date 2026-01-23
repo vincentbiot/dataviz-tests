@@ -2,9 +2,13 @@
 const dataGenerator1 = new DataGenerator();
 const dataGenerator2 = new DataGenerator();
 const visualizations = new Visualizations();
+const dataLoader = new DataLoader();
 
 // Mode comparaison
 let comparisonMode = false;
+
+// Source de données active
+let dataSource = 'random';  // 'random' ou 'axe1'
 
 // Éléments du DOM - Échantillon 1
 const sampleSize1Input = document.getElementById('sampleSize1');
@@ -38,9 +42,21 @@ const removeSampleBtn = document.getElementById('removeSampleBtn');
 const addSampleContainer = document.getElementById('addSampleContainer');
 const sample2Section = document.getElementById('sample2Section');
 
+// Éléments du DOM - Source de données et Axe1
+const dataSourceSelect = document.getElementById('dataSource');
+const randomControls = document.getElementById('randomControls');
+const axe1Controls = document.getElementById('axe1Controls');
+const axe1LoadingIndicator = document.getElementById('axe1LoadingIndicator');
+const axe1ControlsInner = document.getElementById('axe1ControlsInner');
+const axe1YearSelect = document.getElementById('axe1Year');
+const axe1QuestionSelect = document.getElementById('axe1Question');
+const axe1CompareCheckbox = document.getElementById('axe1Compare');
+const axe1DataInfo = document.getElementById('axe1DataInfo');
+
 // Éléments du DOM - Configuration du graphique
 const chartTypeSelect = document.getElementById('chartType');
 const showDataPointsCheckbox = document.getElementById('showDataPoints');
+const showOutliersCheckbox = document.getElementById('showOutliers');
 const chartTitle = document.getElementById('chartTitle');
 const chartLegend = document.getElementById('chartLegend');
 
@@ -172,6 +188,10 @@ showDataPointsCheckbox.addEventListener('change', () => {
     updateVisualization();
 });
 
+showOutliersCheckbox.addEventListener('change', () => {
+    updateVisualization();
+});
+
 // Mettre à jour la visualisation quand l'établissement change (sans régénérer les données)
 establishmentNameInput.addEventListener('input', () => {
     if (currentData1) {
@@ -245,23 +265,214 @@ function updateStats(stats, statElements) {
     statElements.max.textContent = stats.max;
 }
 
+// Fonction pour charger les données axe1
+async function loadAxe1Data() {
+    axe1LoadingIndicator.style.display = 'block';
+    axe1ControlsInner.style.display = 'none';
+
+    const success = await dataLoader.load('divers/axe1.csv');
+
+    if (success) {
+        // Remplir le sélecteur d'années
+        const years = dataLoader.getYears();
+        axe1YearSelect.innerHTML = years.map(year =>
+            `<option value="${year}">${year}</option>`
+        ).join('');
+
+        // Remplir le sélecteur de questions
+        const questions = dataLoader.getQuestions();
+        axe1QuestionSelect.innerHTML = questions.map(q =>
+            `<option value="${q.index}" title="${q.label}">${q.shortLabel}</option>`
+        ).join('');
+
+        axe1LoadingIndicator.style.display = 'none';
+        axe1ControlsInner.style.display = 'block';
+
+        // Générer la visualisation initiale
+        generateFromAxe1();
+    } else {
+        axe1LoadingIndicator.textContent = 'Erreur de chargement des données';
+    }
+}
+
+// Fonction pour générer les visualisations à partir des données axe1
+function generateFromAxe1() {
+    const year = parseInt(axe1YearSelect.value, 10);
+    const questionIndex = parseInt(axe1QuestionSelect.value, 10);
+    const compare = axe1CompareCheckbox.checked;
+
+    // Récupérer données Panel A
+    const dataA = dataLoader.getData(year, questionIndex, 'A');
+
+    if (dataA.validCount === 0) {
+        // Pas de données valides
+        axe1DataInfo.innerHTML = `
+            <div class="info-row">
+                <span class="info-error">Aucune donnée valide pour cette sélection</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Total lignes :</span>
+                <span class="info-value">${dataA.totalCount}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Valeurs NA :</span>
+                <span class="info-warning">${dataA.naCount} (${dataA.naPercent}%)</span>
+            </div>
+        `;
+        return;
+    }
+
+    // Mettre à jour les données du générateur 1
+    dataGenerator1.data = dataA.values;
+    currentData1 = dataA.values;
+    currentStats1 = dataGenerator1.getStats();
+    updateStats(currentStats1, statElements1);
+
+    // Préparer l'affichage des infos
+    let infoHTML = `
+        <div class="info-row">
+            <span class="info-label">Panel A :</span>
+            <span class="info-value">${dataA.validCount} valeurs</span>
+        </div>
+    `;
+
+    if (dataA.naCount > 0) {
+        infoHTML += `
+            <div class="info-row">
+                <span class="info-label">NA (Panel A) :</span>
+                <span class="info-warning">${dataA.naCount} (${dataA.naPercent}%)</span>
+            </div>
+        `;
+    }
+
+    if (compare) {
+        // Récupérer données Panel B
+        const dataB = dataLoader.getData(year, questionIndex, 'B');
+
+        if (dataB.validCount === 0) {
+            axe1DataInfo.innerHTML = infoHTML + `
+                <div class="info-row">
+                    <span class="info-warning">Panel B : Aucune donnée valide</span>
+                </div>
+            `;
+            comparisonMode = false;
+        } else {
+            dataGenerator2.data = dataB.values;
+            currentData2 = dataB.values;
+            currentStats2 = dataGenerator2.getStats();
+            updateStats(currentStats2, statElements2);
+            comparisonMode = true;
+
+            infoHTML += `
+                <div class="info-row">
+                    <span class="info-label">Panel B :</span>
+                    <span class="info-value">${dataB.validCount} valeurs</span>
+                </div>
+            `;
+
+            if (dataB.naCount > 0) {
+                infoHTML += `
+                    <div class="info-row">
+                        <span class="info-label">NA (Panel B) :</span>
+                        <span class="info-warning">${dataB.naCount} (${dataB.naPercent}%)</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Afficher les stats échantillon 2 et la légende
+        statsSample2.style.display = 'block';
+        chartLegend.style.display = 'flex';
+    } else {
+        comparisonMode = false;
+        currentData2 = null;
+        currentStats2 = null;
+        statsSample2.style.display = 'none';
+        chartLegend.style.display = 'none';
+    }
+
+    axe1DataInfo.innerHTML = infoHTML;
+
+    // Mettre à jour la visualisation
+    updateVisualization();
+}
+
+// Gestion du changement de source de données
+dataSourceSelect.addEventListener('change', (e) => {
+    dataSource = e.target.value;
+
+    if (dataSource === 'axe1') {
+        randomControls.style.display = 'none';
+        axe1Controls.style.display = 'block';
+
+        // Charger les données si pas encore fait
+        if (!dataLoader.isLoaded()) {
+            loadAxe1Data();
+        } else {
+            generateFromAxe1();
+        }
+    } else {
+        randomControls.style.display = 'block';
+        axe1Controls.style.display = 'none';
+
+        // Réinitialiser le mode comparaison selon l'état actuel des contrôles random
+        comparisonMode = sample2Section.style.display !== 'none';
+
+        // Mettre à jour l'affichage des stats
+        if (comparisonMode) {
+            statsSample2.style.display = 'block';
+            chartLegend.style.display = 'flex';
+        } else {
+            statsSample2.style.display = 'none';
+            chartLegend.style.display = 'none';
+        }
+
+        // Régénérer avec les données aléatoires
+        generateAndVisualize();
+    }
+});
+
+// Event listeners pour les contrôles axe1
+axe1YearSelect.addEventListener('change', () => {
+    if (dataSource === 'axe1') {
+        generateFromAxe1();
+    }
+});
+
+axe1QuestionSelect.addEventListener('change', () => {
+    if (dataSource === 'axe1') {
+        generateFromAxe1();
+    }
+});
+
+axe1CompareCheckbox.addEventListener('change', () => {
+    if (dataSource === 'axe1') {
+        generateFromAxe1();
+    }
+});
+
 // Fonction pour mettre à jour la visualisation (sans régénérer les données)
 function updateVisualization() {
     if (!currentData1) return;
 
     const chartType = chartTypeSelect.value;
     const showDataPoints = showDataPointsCheckbox.checked;
+    const showOutliers = showOutliersCheckbox.checked;
     const chartTypeName = chartTitles[chartType] || 'Box Plot';
 
     // Mettre à jour le titre
     chartTitle.textContent = comparisonMode ? `${chartTypeName} - Comparaison` : chartTypeName;
+
+    // Définir les noms selon la source de données
+    const sample1Name = dataSource === 'axe1' ? 'Panel A' : 'Échantillon 1';
+    const sample2Name = dataSource === 'axe1' ? 'Panel B' : 'Échantillon 2';
 
     // Préparer les échantillons
     const samples = [{
         data: currentData1,
         stats: currentStats1,
         color: sampleColors.sample1,
-        name: 'Échantillon 1'
+        name: sample1Name
     }];
 
     if (comparisonMode && currentData2) {
@@ -269,8 +480,15 @@ function updateVisualization() {
             data: currentData2,
             stats: currentStats2,
             color: sampleColors.sample2,
-            name: 'Échantillon 2'
+            name: sample2Name
         });
+    }
+
+    // Mettre à jour les légendes dans le DOM
+    const legendLabels = document.querySelectorAll('.legend-label');
+    if (legendLabels.length >= 2) {
+        legendLabels[0].textContent = sample1Name;
+        legendLabels[1].textContent = sample2Name;
     }
 
     // Préparer les données d'établissement
@@ -281,7 +499,7 @@ function updateVisualization() {
     };
 
     // Dessiner le graphique
-    visualizations.draw(samples, chartType, showDataPoints, establishment);
+    visualizations.draw(samples, chartType, showDataPoints, establishment, showOutliers);
 }
 
 // Fonction principale pour générer et visualiser
