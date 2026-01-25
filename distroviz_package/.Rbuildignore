@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^README\.Rmd$
+^\.github$
+^examples$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^install_d3\.sh$
